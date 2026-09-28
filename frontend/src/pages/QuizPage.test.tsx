@@ -163,6 +163,19 @@ describe('QuizPage', () => {
     expect(await start.json()).toEqual({ chapter_id: 21, batch_size: 1, mode: 'review' })
   })
 
+  it('shows a streak of correct answers', async () => {
+    quizBackend()
+    renderRoute('/sessions/7/quiz')
+    await screen.findByText('„kelime1“ Almanca nasıl söylenir?')
+
+    await answerWith('Wort1')
+    await userEvent.click(await screen.findByRole('button', { name: 'Sonraki soru' }))
+    expect(screen.queryByText(/doğru üst üste/)).not.toBeInTheDocument()
+    await answerWith('Wort2')
+
+    expect(await screen.findByText('🔥 2 doğru üst üste')).toBeInTheDocument()
+  })
+
   it('does not offer a review after a perfect quiz', async () => {
     quizBackend([answered(question(1), 'Wort1', 'Wort1'), answered(question(2), 'Wort2', 'Wort2')])
 

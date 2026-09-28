@@ -170,3 +170,9 @@ geht") are not rejected.
       type) and wrong/correct counts; "review this chapter" starts a review session with
       batch_size = the chapter's weak count (review picks weak words first). Linked from the
       document page (when weak > 0) and the quiz summary. Answering invalidates the weak list.
+- [x] F5 — playful design: Nunito/Fredoka (Google Fonts), cream/violet palette with dark mode,
+      chunky 3D buttons, pretzel header, emoji status badges (CSS `content: '…' / ''`, so no
+      screen-reader noise), coloured chapter numbers, der/die/das colour coding on word cards
+      (`lib/fun.ts` `articleOf`), quiz streak counter, stable per-question cheers, confetti on
+      correct answers, shake on wrong ones, medal + score ring in the summary. All motion is
+      off under `prefers-reduced-motion`. No API change.

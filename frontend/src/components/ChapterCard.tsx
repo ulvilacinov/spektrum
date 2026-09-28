@@ -32,11 +32,17 @@ export function ChapterCard({
 
   const note = hint(chapter)
   const percent = Math.round(chapter.mastery_ratio * 100)
+  const done = chapter.total > 0 && chapter.mastered === chapter.total
 
   return (
-    <li className="card">
+    <li className={`card chapter${done ? ' chapter--done' : ''}`}>
       <div className="chapter__head">
-        <h3>{chapter.title}</h3>
+        <div className="chapter__title">
+          <span className="chapter__number" aria-hidden>
+            {chapter.chapter_number}
+          </span>
+          <h3>{chapter.title}</h3>
+        </div>
         <span className="muted">
           {chapter.total} kelime · %{percent} öğrenildi
         </span>

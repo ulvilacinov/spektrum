@@ -18,7 +18,12 @@ export function DocumentsPage() {
           </p>
         )}
         {documents.data?.length === 0 && (
-          <p className="muted">Henüz belge yok. Başlamak için bir PDF yükle.</p>
+          <div className="card empty">
+            <span className="empty__emoji" aria-hidden>
+              📚
+            </span>
+            <p className="muted">Henüz belge yok. Başlamak için bir PDF yükle.</p>
+          </div>
         )}
         {documents.data && documents.data.length > 0 && (
           <ul className="stack list-reset">

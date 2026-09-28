@@ -1,8 +1,11 @@
+import type { CSSProperties } from 'react'
 import { Link, useNavigate } from 'react-router'
 
 import { errorMessage } from '../api/client'
 import { useStartSession, type LearningSession } from '../api/learning'
 import type { QuizQuestion } from '../api/quiz'
+import { medal } from '../lib/fun'
+import { Confetti } from './Confetti'
 
 interface Props {
   session: LearningSession
@@ -14,6 +17,8 @@ export function QuizSummary({ session, questions }: Props) {
   const navigate = useNavigate()
   const correct = questions.filter((question) => question.is_correct).length
   const wrong = questions.length - correct
+  const ratio = questions.length ? correct / questions.length : 0
+  const award = medal(ratio)
 
   function startReview() {
     review.mutate(
@@ -24,11 +29,18 @@ export function QuizSummary({ session, questions }: Props) {
 
   return (
     <div className="stack">
-      <section className="card">
+      <section className="card summary">
+        {ratio >= 0.8 && <Confetti />}
+        <span className="summary__medal" aria-hidden>
+          {award.emoji}
+        </span>
         <h2>Quiz tamamlandı</h2>
-        <p className="quiz__score">
-          {correct} / {questions.length} doğru
-        </p>
+        <p className="feedback__cheer">{award.title}</p>
+        <div className="summary__ring" style={{ '--ratio': ratio } as CSSProperties}>
+          <p className="quiz__score">
+            {correct} / {questions.length} doğru
+          </p>
+        </div>
         <p className="muted">
           {wrong === 0
             ? 'Harika! Hepsini bildin.'

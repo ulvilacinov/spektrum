@@ -1,5 +1,7 @@
 import type { QuizQuestion } from '../api/quiz'
+import { cheer } from '../lib/fun'
 import { ERROR_TYPE_LABELS, STATUS_LABELS, type WordStatus } from '../lib/labels'
+import { Confetti } from './Confetti'
 
 interface Props {
   question: QuizQuestion
@@ -20,7 +22,16 @@ export function AnswerFeedback({ question, status, isLast, onNext }: Props) {
       className={`card feedback ${correct ? 'feedback--correct' : 'feedback--wrong'}`}
       aria-live="polite"
     >
-      <h2>{correct ? 'Doğru!' : 'Yanlış'}</h2>
+      {correct && <Confetti />}
+      <div className="feedback__title">
+        <span className="feedback__emoji" aria-hidden>
+          {correct ? '🎉' : '🙈'}
+        </span>
+        <div>
+          <h2>{correct ? 'Doğru!' : 'Yanlış'}</h2>
+          <p className="feedback__cheer">{cheer(question.id, correct)}</p>
+        </div>
+      </div>
       <p className="muted">{question.question}</p>
       <dl className="feedback__answers">
         <div>

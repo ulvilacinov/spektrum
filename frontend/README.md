@@ -2,7 +2,7 @@
 
 React + TypeScript (Vite) client for the backend in `../backend`. The UI is in Turkish.
 
-Current state: **F4** — documents (upload, analysis), chapters with progress, learning
+Current state: **F5** (playful design) — documents (upload, analysis), chapters with progress, learning
 screen with word cards, quiz with Turkish feedback after every answer and a summary, weak
 words with their latest mistakes and a per-chapter review.
 

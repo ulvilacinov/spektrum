@@ -22,7 +22,7 @@ export function QuestionForm({ question, pending, error, onSubmit }: Props) {
 
   return (
     <form className="card quiz__question" onSubmit={submit}>
-      <p className="muted">{QUESTION_TYPE_LABELS[question.question_type]}</p>
+      <p className="quiz__type">{QUESTION_TYPE_LABELS[question.question_type]}</p>
       <h2 className="quiz__prompt">{question.question}</h2>
       <label className="quiz__answer">
         Cevabın ({language === 'de' ? 'Almanca' : 'Türkçe'})

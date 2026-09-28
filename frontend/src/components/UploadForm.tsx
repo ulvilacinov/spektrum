@@ -34,7 +34,9 @@ export function UploadForm() {
 
   return (
     <form className="card upload" onSubmit={submit}>
-      <h2>PDF yükle</h2>
+      <h2>
+        <span aria-hidden>📤 </span>PDF yükle
+      </h2>
       <p className="muted">Almanca kelime listesi içeren bir PDF seç.</p>
       <div className="upload__row">
         <input

@@ -1,8 +1,10 @@
 import type { SessionItem } from '../api/learning'
+import { articleOf } from '../lib/fun'
 import { ITEM_TYPE_LABELS, STATUS_LABELS } from '../lib/labels'
 
 export function WordCard({ item }: { item: SessionItem }) {
   const word = item.vocabulary_item
+  const article = articleOf(word)
   const grammar = [
     word.prateritum && ['Präteritum', word.prateritum],
     word.perfekt && ['Perfekt', word.perfekt],
@@ -14,9 +16,9 @@ export function WordCard({ item }: { item: SessionItem }) {
   ].filter((entry): entry is [string, string] => Array.isArray(entry))
 
   return (
-    <li className="card word">
+    <li className={`card word${article ? ` word--${article}` : ''}`}>
       <div className="word__head">
-        <span className="muted">{item.position}.</span>
+        <span className="word__number">{item.position}</span>
         <span className={`badge badge--status-${item.status}`}>{STATUS_LABELS[item.status]}</span>
       </div>
       <h3 className="word__german" lang="de">

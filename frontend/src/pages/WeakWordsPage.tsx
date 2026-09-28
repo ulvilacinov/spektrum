@@ -66,7 +66,12 @@ function DocumentWeakWords({ documentId }: { documentId: number }) {
       </section>
 
       {chapters.length === 0 ? (
-        <p className="success">Hiç zayıf kelimen yok. Harika!</p>
+        <div className="card empty">
+          <span className="empty__emoji" aria-hidden>
+            🌟
+          </span>
+          <p className="success">Hiç zayıf kelimen yok. Harika!</p>
+        </div>
       ) : (
         chapters.map(({ chapter, words }) => (
           <WeakChapter key={chapter.chapter_id} chapter={chapter} words={words} />

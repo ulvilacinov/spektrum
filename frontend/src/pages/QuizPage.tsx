@@ -8,6 +8,7 @@ import { AnswerFeedback } from '../components/AnswerFeedback'
 import { NotFound } from '../components/Layout'
 import { QuestionForm } from '../components/QuestionForm'
 import { QuizSummary } from '../components/QuizSummary'
+import { streak } from '../lib/fun'
 import type { WordStatus } from '../lib/labels'
 import { useIdParam } from '../lib/params'
 
@@ -40,6 +41,7 @@ function SessionQuiz({ sessionId }: { sessionId: number }) {
   const answered = questions.filter((question) => question.user_answer !== null).length
   const shown = feedback && questions.find((question) => question.id === feedback.id)
   const next = questions.find((question) => question.user_answer === null)
+  const inARow = streak(questions)
 
   let content
   if (shown) {
@@ -78,11 +80,14 @@ function SessionQuiz({ sessionId }: { sessionId: number }) {
       <Link to={`/sessions/${sessionId}`}>← Kelimeler</Link>
       <div className="quiz__header">
         <h2>{session.data.chapter_title} · Quiz</h2>
-        <span className="muted" aria-label="İlerleme">
-          {next || shown
-            ? `Soru ${Math.min(answered + (shown ? 0 : 1), questions.length)} / ${questions.length}`
-            : `${questions.length} soru`}
-        </span>
+        <div className="quiz__meta">
+          {inARow >= 2 && <span className="streak">🔥 {inARow} doğru üst üste</span>}
+          <span className="muted" aria-label="İlerleme">
+            {next || shown
+              ? `Soru ${Math.min(answered + (shown ? 0 : 1), questions.length)} / ${questions.length}`
+              : `${questions.length} soru`}
+          </span>
+        </div>
       </div>
       <progress className="quiz__progress" max={questions.length} value={answered} aria-hidden />
       {content}
