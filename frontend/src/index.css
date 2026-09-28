@@ -19,7 +19,11 @@
   --status-new: #c8cfd8;
 
   color-scheme: light dark;
-  font: 16px/1.5 system-ui, 'Segoe UI', Roboto, sans-serif;
+  font:
+    16px/1.5 system-ui,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
   color: var(--text);
   background: var(--bg);
 }
@@ -97,7 +101,8 @@ a.button {
   text-decoration: none;
 }
 
-button.secondary {
+button.secondary,
+a.button--secondary {
   background: transparent;
   color: var(--accent);
 }
@@ -393,4 +398,93 @@ select {
 .badge--status-mastered {
   background: var(--status-mastered);
   color: var(--accent-text);
+}
+
+input[type='text'] {
+  font: inherit;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+}
+
+input[type='text']:focus,
+button:focus-visible,
+a:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.quiz__header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.quiz__progress {
+  width: 100%;
+  height: 0.5rem;
+  accent-color: var(--accent);
+}
+
+.quiz__prompt {
+  font-size: 1.2rem;
+}
+
+.quiz__answer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-weight: 600;
+}
+
+.quiz__score {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.feedback--correct {
+  border-color: var(--success);
+  border-left-width: 6px;
+}
+
+.feedback--wrong {
+  border-color: var(--error);
+  border-left-width: 6px;
+}
+
+.feedback__answers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.feedback__answers dt {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.feedback__answers dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.feedback__explanation {
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+
+.summary-item--correct {
+  border-left: 6px solid var(--success);
+}
+
+.summary-item--wrong {
+  border-left: 6px solid var(--error);
 }

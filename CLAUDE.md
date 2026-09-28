@@ -83,7 +83,8 @@ React 19 + TypeScript 5.9 (Vite), React Router, TanStack Query, `openapi-fetch` 
 generated from the backend's OpenAPI (`npm run gen:api` → `src/api/schema.d.ts`, committed;
 regenerate after every API change). UI texts are Turkish; backend error codes are mapped to
 Turkish messages in `src/api/client.ts`. Vite proxies `/api` to `127.0.0.1:8000` (no CORS).
-Every step must leave `npm test`, `npm run lint` and `npm run build` passing.
+Every step must leave `npm test`, `npm run lint`, `npm run format:check` and `npm run build`
+passing.
 
 ## Commands (run from backend/)
 
@@ -159,5 +160,9 @@ geht") are not rejected.
       5/10/20, "new batch" / "review" buttons enabled by `can_start_new_batch` / `can_review`;
       `/sessions/:id`: learning screen with word cards (meaning, grammar, example, PDF page).
       Backend: `GET /api/learning-sessions/{id}` (with `chapter_title`, `document_id`).
-- [ ] F3 — quiz for a session with Turkish feedback after each answer, session summary.
+- [x] F3 — `/sessions/:id/quiz`: one question at a time (resumes at the first unanswered),
+      German/Turkish input without spellcheck/autocorrect, feedback card after each answer
+      (correct/wrong, book answer, AI correction, Turkish explanation, error type, score, new
+      word status), retry after an AI failure, summary with "review weak words". Prettier added
+      (`npm run format`, `format:check`).
 - [ ] F4 — weak words with last mistakes (`/api/review/weak`), review from there.

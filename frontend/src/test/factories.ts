@@ -1,4 +1,5 @@
 import type { Document } from '../api/documents'
+import type { QuizQuestion } from '../api/quiz'
 import type {
   ChapterProgress,
   LearningSession,
@@ -95,4 +96,47 @@ export function vocabulary(overrides: Partial<VocabularyItem> = {}): VocabularyI
 
 export function sessionItem(position: number, word: Partial<VocabularyItem> = {}): SessionItem {
   return { position, status: 'learning', vocabulary_item: vocabulary({ id: position, ...word }) }
+}
+
+export function question(id: number, overrides: Partial<QuizQuestion> = {}): QuizQuestion {
+  return {
+    id,
+    position: id,
+    vocabulary_item_id: id,
+    question_type: 'turkish_to_german',
+    question: `„kelime${id}“ Almanca nasıl söylenir?`,
+    user_answer: null,
+    is_correct: null,
+    score: null,
+    expected_answer: null,
+    corrected_answer: null,
+    ai_feedback: null,
+    error_type: null,
+    evaluation_method: null,
+    answered_at: null,
+    ...overrides,
+  }
+}
+
+/** The answered form of ``unanswered``, as the backend returns it. */
+export function answered(
+  unanswered: QuizQuestion,
+  answer: string,
+  expected: string,
+  overrides: Partial<QuizQuestion> = {},
+): QuizQuestion {
+  const correct = answer === expected
+  return {
+    ...unanswered,
+    user_answer: answer,
+    is_correct: correct,
+    score: correct ? 1 : 0,
+    expected_answer: expected,
+    corrected_answer: expected,
+    ai_feedback: correct ? 'Doğru!' : 'Anlam yanlış.',
+    error_type: correct ? null : 'meaning',
+    evaluation_method: correct ? 'exact' : 'ai',
+    answered_at: '2026-09-28T10:05:00Z',
+    ...overrides,
+  }
 }

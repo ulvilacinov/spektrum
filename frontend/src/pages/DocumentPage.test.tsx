@@ -3,13 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
 import { apiError, json, mockApi, renderRoute } from '../test/utils'
-import {
-  chapterProgress,
-  document,
-  progress,
-  session,
-  sessionItem,
-} from '../test/factories'
+import { chapterProgress, document, progress, session, sessionItem } from '../test/factories'
 
 const CHAPTERS = [
   chapterProgress(),
@@ -68,8 +62,11 @@ describe('DocumentPage', () => {
     expect(within(second).getByRole('button', { name: 'Yeni 10 kelime öğren' })).toBeDisabled()
     expect(within(second).getByRole('button', { name: 'Tekrar et (10)' })).toBeEnabled()
     expect(within(second).getByText(/önce öğrendiğin kelimeleri tekrar et/)).toBeInTheDocument()
-    expect(within(third).getAllByRole('button').every((button) => button.hasAttribute('disabled')))
-      .toBe(true)
+    expect(
+      within(third)
+        .getAllByRole('button')
+        .every((button) => button.hasAttribute('disabled')),
+    ).toBe(true)
   })
 
   it('starts a new batch with the chosen size and opens the learning screen', async () => {

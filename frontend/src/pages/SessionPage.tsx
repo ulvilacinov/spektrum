@@ -40,6 +40,11 @@ function SessionWords({ sessionId }: { sessionId: number }) {
         <p className="muted">
           Kelimeleri, anlamlarını ve örnek cümleleri incele. Hazır olduğunda quiz’e geç.
         </p>
+        <div>
+          <Link className="button" to={`/sessions/${sessionId}/quiz`}>
+            {session.data.completed_at ? 'Quiz sonuçlarını gör' : 'Quiz’e başla'}
+          </Link>
+        </div>
       </section>
       <ul className="stack list-reset">
         {items.data.map((item) => (

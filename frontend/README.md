@@ -2,8 +2,8 @@
 
 React + TypeScript (Vite) client for the backend in `../backend`. The UI is in Turkish.
 
-Current state: **F2** — documents (upload, analysis), chapters with progress, starting
-a new batch or a review, learning screen with word cards.
+Current state: **F3** — documents (upload, analysis), chapters with progress, learning
+screen with word cards, quiz with Turkish feedback after every answer and a summary.
 
 ## Requirements
 
@@ -25,6 +25,7 @@ the browser talks to one origin and the backend needs no CORS setup.
 ```bash
 npm test             # Vitest + Testing Library (fetch is faked, no backend needed)
 npm run lint         # oxlint
+npm run format       # Prettier (format:check in CI)
 npm run build        # type-check + production build
 ```
 

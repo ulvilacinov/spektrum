@@ -35,8 +35,8 @@ export function DocumentRow({ document }: { document: Document }) {
       <div className="document__actions">
         {running ? (
           <p className="muted" role="status">
-            <span className="spinner" aria-hidden /> Bölümler ve kelimeler çıkarılıyor. Bu
-            birkaç dakika sürebilir…
+            <span className="spinner" aria-hidden /> Bölümler ve kelimeler çıkarılıyor. Bu birkaç
+            dakika sürebilir…
           </p>
         ) : document.status === 'parsed' ? (
           <>

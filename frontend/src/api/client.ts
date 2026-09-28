@@ -94,7 +94,5 @@ function isAppError(body: unknown): body is AppErrorBody {
 }
 
 function isValidationError(body: unknown): body is ValidationErrorBody {
-  return (
-    typeof body === 'object' && body !== null && 'detail' in body && Array.isArray(body.detail)
-  )
+  return typeof body === 'object' && body !== null && 'detail' in body && Array.isArray(body.detail)
 }

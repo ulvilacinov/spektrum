@@ -6,13 +6,20 @@ import { ProgressBar } from './ProgressBar'
 
 function hint(chapter: ChapterProgress): string | null {
   if (chapter.total === 0) return 'Bu bölümde kelime yok.'
-  if (chapter.new === 0 && !chapter.can_review) return 'Bölüm tamamlandı. Bütün kelimeler öğrenildi!'
+  if (chapter.new === 0 && !chapter.can_review)
+    return 'Bölüm tamamlandı. Bütün kelimeler öğrenildi!'
   if (chapter.new > 0 && !chapter.can_start_new_batch)
     return 'Yeni kelimelere geçmek için önce öğrendiğin kelimeleri tekrar et.'
   return null
 }
 
-export function ChapterCard({ chapter, batchSize }: { chapter: ChapterProgress; batchSize: number }) {
+export function ChapterCard({
+  chapter,
+  batchSize,
+}: {
+  chapter: ChapterProgress
+  batchSize: number
+}) {
   const start = useStartSession()
   const navigate = useNavigate()
 
