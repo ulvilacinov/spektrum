@@ -77,6 +77,14 @@ Alembic, PostgreSQL 16, PyMuPDF, Gemini (behind a provider abstraction), pytest,
 - Tests use in-memory SQLite (`tests/conftest.py`) for speed; migrations are verified
   against real PostgreSQL.
 
+## Frontend (frontend/)
+
+React 19 + TypeScript 5.9 (Vite), React Router, TanStack Query, `openapi-fetch` with types
+generated from the backend's OpenAPI (`npm run gen:api` → `src/api/schema.d.ts`, committed;
+regenerate after every API change). UI texts are Turkish; backend error codes are mapped to
+Turkish messages in `src/api/client.ts`. Vite proxies `/api` to `127.0.0.1:8000` (no CORS).
+Every step must leave `npm test`, `npm run lint` and `npm run build` passing.
+
 ## Commands (run from backend/)
 
 ```bash
@@ -144,4 +152,9 @@ geht") are not rejected.
       new/learning/weak/mastered, mastery_ratio, can_start_new_batch, can_review) and
       `GET /api/review/weak` (with the latest mistake and its Turkish feedback). The full
       spec cycle is covered by one API test and was verified on PostgreSQL with real Gemini.
-- [ ] Later — frontend (React + TypeScript).
+- [x] F1 — frontend scaffold, typed API client, documents page: list with status, PDF
+      upload (client-side .pdf check, Turkish API errors), analyze / re-analyze (confirmation,
+      because re-analysis deletes learning progress), polling while a document is parsing.
+- [ ] F2 — chapter list with progress (`/api/progress`), start new batch / review.
+- [ ] F3 — learning screen (session words) and quiz with Turkish feedback per answer.
+- [ ] F4 — weak words with last mistakes, batch-locked / unlocked flow.
