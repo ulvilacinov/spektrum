@@ -13,7 +13,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base import Base
+from app.db.base import Base, enum_column
+from app.domain.enums import SessionMode
 
 if TYPE_CHECKING:
     from app.db.models.vocabulary_item import VocabularyItem
@@ -31,6 +32,12 @@ class LearningSession(Base):
         ForeignKey("chapters.id", ondelete="CASCADE"), nullable=False, index=True
     )
     batch_size: Mapped[int] = mapped_column(Integer, nullable=False)
+    mode: Mapped[SessionMode] = mapped_column(
+        enum_column(SessionMode, length=20),
+        nullable=False,
+        default=SessionMode.NEW,
+        server_default=SessionMode.NEW.value,
+    )
 
     started_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()

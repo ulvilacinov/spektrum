@@ -5,6 +5,7 @@ touching sessions, quizzes or routes.
 """
 
 from abc import ABC, abstractmethod
+from collections.abc import Mapping
 from datetime import datetime
 
 from app.db.models import UserVocabularyProgress
@@ -36,12 +37,17 @@ class ProgressionPolicy(ABC):
     ) -> None:
         """The learner answered a quiz question about the item."""
 
+    @abstractmethod
+    def is_new_batch_unlocked(self, status_counts: Mapping[VocabularyStatus, int]) -> bool:
+        """Whether the chapter's next batch of new words may start, given its status counts."""
+
 
 class SimpleProgressionPolicy(ProgressionPolicy):
     """MVP rules from the spec.
 
     new → learning after the first study; a wrong answer → weak (due for review now);
     a correct answer → learning; ``mastery_streak`` correct answers in a row → mastered.
+    The next batch unlocks once every studied word of the chapter is mastered.
     """
 
     def __init__(self, mastery_streak: int = 2) -> None:
@@ -71,3 +77,9 @@ class SimpleProgressionPolicy(ProgressionPolicy):
             progress.status = VocabularyStatus.WEAK
             progress.next_review_at = now
         progress.mastery_score = min(progress.consecutive_correct / self.mastery_streak, 1.0)
+
+    def is_new_batch_unlocked(self, status_counts: Mapping[VocabularyStatus, int]) -> bool:
+        open_words = status_counts.get(VocabularyStatus.LEARNING, 0) + status_counts.get(
+            VocabularyStatus.WEAK, 0
+        )
+        return open_words == 0

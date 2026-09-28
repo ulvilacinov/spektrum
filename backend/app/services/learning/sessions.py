@@ -1,4 +1,4 @@
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
@@ -12,6 +12,7 @@ from app.db.models import (
     UserVocabularyProgress,
     VocabularyItem,
 )
+from app.domain.enums import SessionMode, VocabularyStatus
 from app.repositories.chapter_repository import ChapterRepository
 from app.repositories.learning_repository import LearningRepository
 from app.services.learning.progression import ProgressionPolicy, new_progress
@@ -44,21 +45,27 @@ class LearningSessionService:
         self.policy = policy
         self.clock = clock
 
-    def start(self, *, user_id: int, chapter_id: int, batch_size: int) -> LearningSession:
-        """Pick the chapter's next ``batch_size`` unstudied items and mark them as studied."""
+    def start(
+        self,
+        *,
+        user_id: int,
+        chapter_id: int,
+        batch_size: int,
+        mode: SessionMode = SessionMode.NEW,
+    ) -> LearningSession:
+        """Start a batch and mark its words as studied.
+
+        NEW: the chapter's next unstudied words, only once the policy unlocks the next batch.
+        REVIEW: studied but not yet mastered words, weak ones first.
+        """
         if self.chapters.get(chapter_id) is None:
             raise NotFoundError(
                 f"Chapter {chapter_id} was not found.", details={"chapter_id": chapter_id}
             )
-        vocabulary = self.learning.next_new_items(
-            user_id=user_id, chapter_id=chapter_id, limit=batch_size
-        )
-        if not vocabulary:
-            raise ConflictError(
-                "Every vocabulary item of this chapter has already been studied.",
-                code="no_new_vocabulary",
-                details={"chapter_id": chapter_id},
-            )
+        if mode is SessionMode.REVIEW:
+            vocabulary = self._review_words(user_id, chapter_id, batch_size)
+        else:
+            vocabulary = self._new_words(user_id, chapter_id, batch_size)
 
         now = self.clock()
         existing = self.learning.progress_by_item(
@@ -68,6 +75,7 @@ class LearningSessionService:
             user_id=user_id,
             chapter_id=chapter_id,
             batch_size=batch_size,
+            mode=mode,
             correct_count=0,
             wrong_count=0,
             items=[
@@ -95,6 +103,46 @@ class LearningSessionService:
             ) from exc
         self.session.refresh(learning_session)  # load server-generated started_at
         return learning_session
+
+    def _new_words(
+        self, user_id: int, chapter_id: int, batch_size: int
+    ) -> Sequence[VocabularyItem]:
+        counts = self.learning.status_counts(user_id=user_id, chapter_ids=[chapter_id])[chapter_id]
+        if not self.policy.is_new_batch_unlocked(counts):
+            raise ConflictError(
+                "Master the words you are learning before starting a new batch: "
+                "start a review session first.",
+                code="batch_locked",
+                details={
+                    "chapter_id": chapter_id,
+                    "learning": counts[VocabularyStatus.LEARNING],
+                    "weak": counts[VocabularyStatus.WEAK],
+                },
+            )
+        vocabulary = self.learning.next_new_items(
+            user_id=user_id, chapter_id=chapter_id, limit=batch_size
+        )
+        if not vocabulary:
+            raise ConflictError(
+                "Every vocabulary item of this chapter has already been studied.",
+                code="no_new_vocabulary",
+                details={"chapter_id": chapter_id},
+            )
+        return vocabulary
+
+    def _review_words(
+        self, user_id: int, chapter_id: int, batch_size: int
+    ) -> Sequence[VocabularyItem]:
+        vocabulary = self.learning.review_items(
+            user_id=user_id, chapter_id=chapter_id, limit=batch_size
+        )
+        if not vocabulary:
+            raise ConflictError(
+                "There is nothing to review in this chapter.",
+                code="nothing_to_review",
+                details={"chapter_id": chapter_id},
+            )
+        return vocabulary
 
     def get(self, *, user_id: int, learning_session_id: int) -> LearningSession:
         learning_session = self.learning.get_session(learning_session_id)

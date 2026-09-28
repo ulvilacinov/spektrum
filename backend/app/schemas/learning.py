@@ -4,7 +4,13 @@ from typing import Self
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.db.models import LearningSession, QuizQuestion
-from app.domain.enums import ErrorType, EvaluationMethod, QuestionType, VocabularyStatus
+from app.domain.enums import (
+    ErrorType,
+    EvaluationMethod,
+    QuestionType,
+    SessionMode,
+    VocabularyStatus,
+)
 from app.schemas.vocabulary import VocabularyItemRead
 from app.services.learning import AnswerOutcome, Quiz, SessionItem
 
@@ -20,12 +26,18 @@ class LearningSessionCreate(BaseModel):
         le=MAX_BATCH_SIZE,
         description="Number of words to study (e.g. 5, 10 or 20).",
     )
+    mode: SessionMode = Field(
+        default=SessionMode.NEW,
+        description="new: the chapter's next unstudied words (once the batch is unlocked); "
+        "review: studied but not yet mastered words, weak ones first.",
+    )
 
 
 class LearningSessionRead(BaseModel):
     id: int
     chapter_id: int
     batch_size: int
+    mode: SessionMode
     item_count: int = Field(description="Can be below batch_size for the chapter's last batch.")
     started_at: datetime
     completed_at: datetime | None
@@ -38,6 +50,7 @@ class LearningSessionRead(BaseModel):
             id=learning_session.id,
             chapter_id=learning_session.chapter_id,
             batch_size=learning_session.batch_size,
+            mode=learning_session.mode,
             item_count=len(learning_session.items),
             started_at=learning_session.started_at,
             completed_at=learning_session.completed_at,

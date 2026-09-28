@@ -51,3 +51,9 @@ class ChapterRepository:
             .order_by(VocabularyItem.order)
         )
         return self.session.scalars(statement).all()
+
+    def list_chapters(self, *, document_id: int | None = None) -> Sequence[Chapter]:
+        statement = select(Chapter).order_by(Chapter.document_id, Chapter.order)
+        if document_id is not None:
+            statement = statement.where(Chapter.document_id == document_id)
+        return self.session.scalars(statement).all()

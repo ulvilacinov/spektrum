@@ -1,3 +1,4 @@
+from collections import Counter
 from collections.abc import Iterable, Sequence
 from datetime import datetime
 
@@ -5,6 +6,7 @@ from sqlalchemy import and_, func, or_, select, update
 from sqlalchemy.orm import Session
 
 from app.db.models import (
+    Chapter,
     LearningSession,
     LearningSessionItem,
     QuizQuestion,
@@ -129,3 +131,102 @@ class LearningRepository:
             QuizQuestion.user_answer.is_(None),
         )
         return self.session.scalar(statement) or 0
+
+    def status_counts(
+        self, *, user_id: int, chapter_ids: Iterable[int]
+    ) -> dict[int, Counter[VocabularyStatus]]:
+        """Per chapter, how many words have each status (words without progress are new)."""
+        ids = list(chapter_ids)
+        if not ids:
+            return {}
+        progress = UserVocabularyProgress
+        statement = (
+            select(VocabularyItem.chapter_id, progress.status, func.count(VocabularyItem.id))
+            .outerjoin(
+                progress,
+                and_(
+                    progress.vocabulary_item_id == VocabularyItem.id,
+                    progress.user_id == user_id,
+                ),
+            )
+            .where(VocabularyItem.chapter_id.in_(ids))
+            .group_by(VocabularyItem.chapter_id, progress.status)
+        )
+        counts: dict[int, Counter[VocabularyStatus]] = {chapter_id: Counter() for chapter_id in ids}
+        for chapter_id, status, count in self.session.execute(statement):
+            counts[chapter_id][status or VocabularyStatus.NEW] += count
+        return counts
+
+    def review_items(
+        self, *, user_id: int, chapter_id: int, limit: int
+    ) -> Sequence[VocabularyItem]:
+        """Studied, not yet mastered words: weak first (longest due first), then learning."""
+        progress = UserVocabularyProgress
+        weak_first = (progress.status == VocabularyStatus.WEAK).desc()
+        statement = (
+            select(VocabularyItem)
+            .join(
+                progress,
+                and_(
+                    progress.vocabulary_item_id == VocabularyItem.id,
+                    progress.user_id == user_id,
+                ),
+            )
+            .where(
+                VocabularyItem.chapter_id == chapter_id,
+                progress.status.in_([VocabularyStatus.WEAK, VocabularyStatus.LEARNING]),
+            )
+            .order_by(
+                weak_first,
+                progress.next_review_at.asc().nulls_last(),
+                progress.last_seen_at.asc().nulls_first(),
+                VocabularyItem.order,
+            )
+            .limit(limit)
+        )
+        return self.session.scalars(statement).all()
+
+    def weak_items(
+        self,
+        *,
+        user_id: int,
+        document_id: int | None,
+        chapter_id: int | None,
+        limit: int,
+    ) -> Sequence[tuple[VocabularyItem, UserVocabularyProgress]]:
+        progress = UserVocabularyProgress
+        statement = (
+            select(VocabularyItem, progress)
+            .join(progress, progress.vocabulary_item_id == VocabularyItem.id)
+            .join(Chapter, Chapter.id == VocabularyItem.chapter_id)
+            .where(progress.user_id == user_id, progress.status == VocabularyStatus.WEAK)
+            .order_by(progress.next_review_at.asc().nulls_last(), VocabularyItem.id)
+            .limit(limit)
+        )
+        if document_id is not None:
+            statement = statement.where(Chapter.document_id == document_id)
+        if chapter_id is not None:
+            statement = statement.where(VocabularyItem.chapter_id == chapter_id)
+        return [(item, row) for item, row in self.session.execute(statement)]
+
+    def last_wrong_answers(
+        self, *, user_id: int, vocabulary_item_ids: Iterable[int]
+    ) -> dict[int, QuizQuestion]:
+        """The most recent wrong answer of the user for each item."""
+        ids = list(vocabulary_item_ids)
+        if not ids:
+            return {}
+        statement = (
+            select(QuizQuestion)
+            .join(LearningSession, LearningSession.id == QuizQuestion.learning_session_id)
+            .where(
+                LearningSession.user_id == user_id,
+                QuizQuestion.vocabulary_item_id.in_(ids),
+                QuizQuestion.is_correct.is_(False),
+            )
+            .order_by(QuizQuestion.answered_at.desc(), QuizQuestion.id.desc())
+        )
+        latest: dict[int, QuizQuestion] = {}
+        for question in self.session.scalars(statement):
+            latest.setdefault(question.vocabulary_item_id, question)
+        return latest

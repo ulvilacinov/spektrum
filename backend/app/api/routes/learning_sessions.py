@@ -17,9 +17,16 @@ def start_learning_session(
     user_id: CurrentUserId,
     service: LearningSessionServiceDep,
 ) -> LearningSessionRead:
-    """Start a batch with the chapter's next 5/10/20 unstudied words (they become learning)."""
+    """Start a batch: the next unstudied words (mode=new) or unmastered ones (mode=review).
+
+    A new batch is locked (409 batch_locked) until every studied word of the chapter is
+    mastered; review them first.
+    """
     learning_session = service.start(
-        user_id=user_id, chapter_id=payload.chapter_id, batch_size=payload.batch_size
+        user_id=user_id,
+        chapter_id=payload.chapter_id,
+        batch_size=payload.batch_size,
+        mode=payload.mode,
     )
     return LearningSessionRead.from_session(learning_session)
 

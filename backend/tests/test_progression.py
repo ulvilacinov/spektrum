@@ -1,3 +1,4 @@
+from collections import Counter
 from datetime import UTC, datetime, timedelta
 
 from app.domain.enums import VocabularyStatus
@@ -78,3 +79,12 @@ def test_mastery_streak_is_configurable() -> None:
     assert progress.status is VocabularyStatus.LEARNING
     strict.record_answer(progress, correct=True, now=NOW)
     assert progress.status is VocabularyStatus.MASTERED
+
+
+def test_new_batch_unlocks_only_when_studied_words_are_mastered() -> None:
+    assert policy.is_new_batch_unlocked(Counter({VocabularyStatus.NEW: 10}))
+    assert policy.is_new_batch_unlocked(
+        Counter({VocabularyStatus.NEW: 5, VocabularyStatus.MASTERED: 5})
+    )
+    assert not policy.is_new_batch_unlocked(Counter({VocabularyStatus.LEARNING: 1}))
+    assert not policy.is_new_batch_unlocked(Counter({VocabularyStatus.WEAK: 1}))

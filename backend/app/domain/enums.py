@@ -53,3 +53,8 @@ class EvaluationMethod(StrEnum):
     NORMALIZED = "normalized"  # equal after deterministic normalization
     RULE = "rule"  # closed question (article, preposition, …) judged without AI
     AI = "ai"
+
+
+class SessionMode(StrEnum):
+    NEW = "new"  # the chapter's next unstudied words
+    REVIEW = "review"  # studied but not yet mastered words, weak ones first

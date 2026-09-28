@@ -17,6 +17,7 @@ from app.services.learning import (
     AnswerService,
     LearningSessionService,
     ProgressionPolicy,
+    ProgressService,
     QuizService,
     SimpleProgressionPolicy,
 )
@@ -126,3 +127,12 @@ def get_answer_service(
 
 
 AnswerServiceDep = Annotated[AnswerService, Depends(get_answer_service)]
+
+
+def get_progress_service(
+    db: DbSession, policy: Annotated[ProgressionPolicy, Depends(get_progression_policy)]
+) -> ProgressService:
+    return ProgressService(db, policy=policy)
+
+
+ProgressServiceDep = Annotated[ProgressService, Depends(get_progress_service)]

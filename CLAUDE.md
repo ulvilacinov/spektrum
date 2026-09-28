@@ -50,7 +50,8 @@ Alembic, PostgreSQL 16, PyMuPDF, Gemini (behind a provider abstraction), pytest,
   `get_progression_policy()`); `sessions.py`: `LearningSessionService`;
   `question_generation.py`: deterministic, weighted question builders (no AI);
   `quiz.py`: `QuizService`; `answer_matching.py`: deterministic exact/normalized matching
-  with "/" alternatives and optional "( )" parts; `answers.py`: `AnswerService`.
+  with "/" alternatives and optional "( )" parts; `answers.py`: `AnswerService`;
+  `progress.py`: `ProgressService` (read-only progress and weak-word views).
 - Services that need the AI only sometimes get `get_ai_provider_factory()` (lazy), so
   deterministic paths work without an AI configuration.
 - The acting user comes from `get_current_user_id()` (`DEFAULT_USER_ID` until auth exists).
@@ -136,5 +137,11 @@ geht") are not rejected.
       (migration 0004). One answer per question (atomic conditional UPDATE, 409 otherwise);
       AI failure stores nothing. Updates progress via `ProgressionPolicy.record_answer`,
       session counters and `completed_at`. Verified with real Gemini (~2–5 s per AI answer).
-- [ ] STEP 8 — `GET /api/progress`, `GET /api/review/weak`, batch unlocking.
+- [x] STEP 8 — `LearningSession.mode` new|review (migration 0005): review sessions pick
+      studied, unmastered words (weak first, longest due first). New batches are locked
+      (409 `batch_locked`) until every studied word of the chapter is mastered
+      (`ProgressionPolicy.is_new_batch_unlocked`). `GET /api/progress?document_id=` (per-chapter
+      new/learning/weak/mastered, mastery_ratio, can_start_new_batch, can_review) and
+      `GET /api/review/weak` (with the latest mistake and its Turkish feedback). The full
+      spec cycle is covered by one API test and was verified on PostgreSQL with real Gemini.
 - [ ] Later — frontend (React + TypeScript).

@@ -99,12 +99,22 @@ def test_studied_words_become_learning(
     assert progress_of(sqlite_session, "Wort6") is None
 
 
+def master_studied_words(sqlite_session: Session) -> None:
+    """Stand-in for review quizzes answered correctly twice in a row."""
+    for progress in sqlite_session.scalars(select(UserVocabularyProgress)):
+        progress.status = VocabularyStatus.MASTERED
+    sqlite_session.commit()
+
+
 def test_next_sessions_continue_with_the_next_batch_until_the_chapter_is_done(
-    client: TestClient, chapter_id: int
+    client: TestClient, sqlite_session: Session, chapter_id: int
 ) -> None:
     first = start(client, chapter_id, 5).json()
+    master_studied_words(sqlite_session)
     second = start(client, chapter_id, 5).json()
+    master_studied_words(sqlite_session)
     last = start(client, chapter_id, 5).json()
+    master_studied_words(sqlite_session)
 
     assert item_words(client, first["id"])[0] == "Wort1"
     assert item_words(client, second["id"]) == [f"Wort{n}" for n in range(6, 11)]
@@ -123,17 +133,17 @@ def test_items_already_in_progress_are_not_picked_again(
         select(VocabularyItem).where(VocabularyItem.chapter_id == chapter_id)
     ).all()
     by_word = {item.german: item for item in items}
-    weak = new_progress(USER_ID, by_word["Wort1"].id)
-    weak.status = VocabularyStatus.WEAK
+    mastered = new_progress(USER_ID, by_word["Wort1"].id)
+    mastered.status = VocabularyStatus.MASTERED
     untouched = new_progress(USER_ID, by_word["Wort2"].id)  # exists but still "new"
-    sqlite_session.add_all([weak, untouched])
+    sqlite_session.add_all([mastered, untouched])
     sqlite_session.commit()
 
     session_id = start(client, chapter_id, 5).json()["id"]
 
     assert item_words(client, session_id) == ["Wort2", "Wort3", "Wort4", "Wort5", "Wort6"]
     assert progress_of(sqlite_session, "Wort2").status is VocabularyStatus.LEARNING
-    assert progress_of(sqlite_session, "Wort1").status is VocabularyStatus.WEAK
+    assert progress_of(sqlite_session, "Wort1").status is VocabularyStatus.MASTERED
 
 
 @pytest.mark.parametrize("batch_size", [1, 3, 7])
