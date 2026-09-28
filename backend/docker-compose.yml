@@ -2,12 +2,15 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: vocab-postgres
+    # Starts again with Docker Desktop.
+    restart: unless-stopped
     environment:
       POSTGRES_USER: vocab
       POSTGRES_PASSWORD: vocab
       POSTGRES_DB: vocab
     ports:
-      - "5432:5432"
+      # Only this computer; the database is never reachable from the network.
+      - "127.0.0.1:5432:5432"
     volumes:
       - vocab-pgdata:/var/lib/postgresql/data
     healthcheck:

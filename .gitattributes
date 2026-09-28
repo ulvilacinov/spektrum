@@ -1,0 +1,5 @@
+# Repository files use LF everywhere (Prettier expects it), independent of core.autocrlf.
+* text=auto eol=lf
+*.ps1 text eol=crlf
+*.png binary
+*.pdf binary

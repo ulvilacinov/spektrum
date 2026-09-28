@@ -24,6 +24,8 @@ Alembic, PostgreSQL 16, PyMuPDF, Gemini (behind a provider abstraction), pytest,
 ## Architecture (backend/)
 
 - `app/api/` — HTTP only: routes, dependencies. **No business logic in route handlers.**
+  `frontend.py`: `mount_frontend()` serves the built SPA (`FRONTEND_DIST_DIR`) with an
+  `index.html` fallback; unknown `/api/*` paths stay JSON 404s.
 - `app/core/` — `config.py` (Settings via `get_settings()`), `exceptions.py` (`AppError`,
   `NotFoundError`, `ConflictError`, `UnprocessableError`, `PayloadTooLargeError`,
   `UnsupportedMediaTypeError` → JSON `{"error": {code, message, details}}`; `code` can be
@@ -96,6 +98,11 @@ uvicorn app.main:app --reload     # http://localhost:8000/docs
 pytest
 ruff check .
 ```
+
+Self-hosting on this PC: `.\start.ps1` in the repo root (Docker → Postgres → migrations →
+frontend build → uvicorn on 0.0.0.0:8000 serving UI + API). See the root `README.md`.
+`DATABASE_URL` uses `127.0.0.1`, not `localhost`: Postgres is published on 127.0.0.1 only and
+on Windows a `::1` attempt stalls for minutes before falling back.
 
 ## Status
 
@@ -176,3 +183,7 @@ geht") are not rejected.
       (`lib/fun.ts` `articleOf`), quiz streak counter, stable per-question cheers, confetti on
       correct answers, shake on wrong ones, medal + score ring in the summary. All motion is
       off under `prefers-reduced-motion`. No API change.
+- [x] Self-hosting — `start.ps1` (one command), backend serves `frontend/dist` when
+      `FRONTEND_DIST_DIR` is set, Postgres published on 127.0.0.1 only with
+      `restart: unless-stopped`, `DATABASE_URL` → 127.0.0.1, root README with Tailscale access
+      (firewall rule limited to 100.64.0.0/10), autostart and backups.

@@ -21,10 +21,13 @@ class Settings(BaseSettings):
     debug: bool = False
     api_prefix: str = "/api"
 
-    database_url: str = "postgresql+psycopg://vocab:vocab@localhost:5432/vocab"
+    database_url: str = "postgresql+psycopg://vocab:vocab@127.0.0.1:5432/vocab"
     database_echo: bool = False
 
     upload_dir: Path = Field(default=Path("uploads"))
+    # Built frontend (``npm run build`` → frontend/dist) served next to the API. None = API only
+    # (development uses the Vite dev server instead).
+    frontend_dist_dir: Path | None = None
     max_upload_size_mb: int = Field(default=20, gt=0)
 
     # Until authentication exists every request acts as this user.
@@ -41,9 +44,11 @@ class Settings(BaseSettings):
     gemini_api_key: SecretStr | None = None
     gemini_model: str = "gemini-3.8-flash"
 
-    @field_validator("upload_dir")
+    @field_validator("upload_dir", "frontend_dist_dir")
     @classmethod
-    def resolve_upload_dir(cls, value: Path) -> Path:
+    def resolve_path(cls, value: Path | None) -> Path | None:
+        if value is None:
+            return None
         return value if value.is_absolute() else (BASE_DIR / value).resolve()
 
 
