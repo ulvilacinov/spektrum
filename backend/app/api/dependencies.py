@@ -6,6 +6,14 @@ from sqlalchemy.orm import Session
 
 from app.core.config import Settings, get_settings
 from app.db.session import SessionLocal
+from app.services.ai import AIProvider, create_ai_provider
+from app.services.documents import (
+    ChapterService,
+    DocumentAnalysisService,
+    DocumentService,
+    LocalFileStorage,
+)
+from app.services.pdf import PdfTextExtractor
 
 
 def get_db() -> Iterator[Session]:
@@ -19,3 +27,49 @@ def get_db() -> Iterator[Session]:
 
 DbSession = Annotated[Session, Depends(get_db)]
 AppSettings = Annotated[Settings, Depends(get_settings)]
+
+
+def get_document_service(db: DbSession, settings: AppSettings) -> DocumentService:
+    return DocumentService(
+        db,
+        storage=LocalFileStorage(settings.upload_dir),
+        extractor=PdfTextExtractor(),
+        max_upload_bytes=settings.max_upload_size_mb * 1024 * 1024,
+    )
+
+
+DocumentServiceDep = Annotated[DocumentService, Depends(get_document_service)]
+
+
+def get_chapter_service(db: DbSession) -> ChapterService:
+    return ChapterService(db)
+
+
+ChapterServiceDep = Annotated[ChapterService, Depends(get_chapter_service)]
+
+
+def get_ai_provider(settings: AppSettings) -> AIProvider:
+    return create_ai_provider(settings)
+
+
+AIProviderDep = Annotated[AIProvider, Depends(get_ai_provider)]
+
+
+def get_document_analysis_service(
+    db: DbSession,
+    settings: AppSettings,
+    documents: DocumentServiceDep,
+    ai_provider: AIProviderDep,
+) -> DocumentAnalysisService:
+    return DocumentAnalysisService(
+        db,
+        documents=documents,
+        ai_provider=ai_provider,
+        max_pages_per_request=settings.ai_max_pages_per_request,
+        max_concurrency=settings.ai_max_concurrency,
+    )
+
+
+DocumentAnalysisServiceDep = Annotated[
+    DocumentAnalysisService, Depends(get_document_analysis_service)
+]

@@ -10,9 +10,17 @@ class AppError(Exception):
     status_code: int = status.HTTP_400_BAD_REQUEST
     code: str = "app_error"
 
-    def __init__(self, message: str, *, details: dict[str, Any] | None = None) -> None:
+    def __init__(
+        self,
+        message: str,
+        *,
+        code: str | None = None,
+        details: dict[str, Any] | None = None,
+    ) -> None:
         super().__init__(message)
         self.message = message
+        if code is not None:
+            self.code = code
         self.details = details or {}
 
 
@@ -24,6 +32,21 @@ class NotFoundError(AppError):
 class ConflictError(AppError):
     status_code = status.HTTP_409_CONFLICT
     code = "conflict"
+
+
+class UnprocessableError(AppError):
+    status_code = status.HTTP_422_UNPROCESSABLE_CONTENT
+    code = "unprocessable"
+
+
+class PayloadTooLargeError(AppError):
+    status_code = status.HTTP_413_CONTENT_TOO_LARGE
+    code = "payload_too_large"
+
+
+class UnsupportedMediaTypeError(AppError):
+    status_code = status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
+    code = "unsupported_media_type"
 
 
 async def app_error_handler(_: Request, exc: AppError) -> JSONResponse:

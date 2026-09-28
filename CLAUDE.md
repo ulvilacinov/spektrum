@@ -25,12 +25,28 @@ Alembic, PostgreSQL 16, PyMuPDF, Gemini (behind a provider abstraction), pytest,
 
 - `app/api/` — HTTP only: routes, dependencies. **No business logic in route handlers.**
 - `app/core/` — `config.py` (Settings via `get_settings()`), `exceptions.py` (`AppError`,
-  `NotFoundError`, `ConflictError` → JSON `{"error": {code, message, details}}`).
+  `NotFoundError`, `ConflictError`, `UnprocessableError`, `PayloadTooLargeError`,
+  `UnsupportedMediaTypeError` → JSON `{"error": {code, message, details}}`; `code` can be
+  overridden per raise).
 - `app/db/` — `Base` with naming convention, `enum_column()` helper, `session.py`, `models/`.
 - `app/domain/` — enums and domain types, independent of FastAPI/SQLAlchemy.
 - `app/schemas/` — Pydantic request/response models.
-- `app/repositories/` — DB access (to be added).
-- `app/services/{pdf,ai,documents,learning}/` — business logic (to be added).
+- `app/repositories/` — DB access only; never commits (`DocumentRepository`).
+- `app/services/pdf/` — `PdfTextExtractor`: PyMuPDF page-by-page text, 1-based page numbers,
+  blank pages kept. No DB/HTTP knowledge.
+- `app/services/documents/` — `DocumentService` (upload validation, storage, CRUD,
+  `extract_pages(document_id)` for STEP 3) and `LocalFileStorage` (keys relative to `uploads/`).
+- `app/services/ai/` — `AIProvider` (ABC), `GeminiAIProvider`, `create_ai_provider()` (the only
+  place that names concrete providers), provider-independent `prompts.py`, and the structured
+  output contract in `schemas.py` (lenient Pydantic models).
+- `app/services/documents/analysis.py` — `DocumentAnalysisService`: status claim (atomic
+  UPDATE), page extraction, AI chapter detection → `chapter_planning.plan_chapters()`,
+  concurrent per-chapter/per-chunk vocabulary extraction → `vocabulary_grounding.ground_items()`
+  (rejects items whose `source_text` is not on the page), one final transaction.
+- `app/services/documents/chapters.py` — `ChapterService`: read access to chapters and
+  vocabulary (routes build responses with `ChapterSummaryRead.from_chapter`).
+- `app/services/learning/` — to be added.
+- Services are wired in `app/api/dependencies.py` (e.g. `DocumentServiceDep`).
 
 ## Conventions
 
@@ -45,6 +61,8 @@ Alembic, PostgreSQL 16, PyMuPDF, Gemini (behind a provider abstraction), pytest,
   must never import Gemini directly.
 - AI output for document parsing is always structured JSON validated by Pydantic.
   Vocabulary items must originate from the PDF; the AI may add examples/translations only.
+  This is enforced deterministically by `vocabulary_grounding`, not only by the prompt.
+- Tests never call a real AI: `tests/fake_ai.py` overrides `get_ai_provider`.
 - Answer checking: exact match → normalized deterministic comparison → AI only when needed.
 - Progression logic (new/learning/weak/mastered) lives in one isolated service.
 - Tests use in-memory SQLite (`tests/conftest.py`) for speed; migrations are verified
@@ -65,11 +83,29 @@ ruff check .
 
 - [x] STEP 1 — skeleton, config, Document/Chapter/VocabularyItem models, migration 0001,
       `GET /api/health`.
-- [ ] STEP 2 — `POST /api/documents` (PDF upload, validation, storage in `uploads/`),
-      `GET /api/documents`, `GET /api/documents/{id}`, PyMuPDF page-by-page extraction
-      service with page numbers preserved. No AI yet.
-- [ ] STEP 3 — `AIProvider` + `GeminiAIProvider`, chapter detection, vocabulary extraction,
-      `POST /api/documents/{id}/analyze`.
-- [ ] STEP 4 — `GET /api/documents/{id}/chapters` (with `vocabulary_count`),
-      `GET /api/chapters/{id}/vocabulary`. First milestone complete.
+- [x] STEP 2 — `POST /api/documents` (PDF upload: extension/content-type → 415, size limit
+      → 413, empty/non-PDF/corrupt/encrypted → 422; saved as `uploads/<uuid>.pdf`, file removed
+      if the DB commit fails), `GET /api/documents` (newest first, `limit`/`offset`),
+      `GET /api/documents/{id}`, `PdfTextExtractor` + `DocumentService.extract_pages()`.
+      No schema change. Page text is not persisted; STEP 3 extracts it on analyze.
+- [x] STEP 3 — `AIProvider` + `GeminiAIProvider` (google-genai, `response_schema`, SDK retries
+      on 429/5xx, one retry on invalid JSON, 502 on AI errors, 503 without `GEMINI_API_KEY`),
+      AI chapter detection (headings or running headers, `starts_mid_page`), vocabulary
+      extraction in chunks of `AI_MAX_PAGES_PER_REQUEST` pages with `AI_MAX_CONCURRENCY`
+      parallel requests, grounding against page text, per-chapter de-duplication,
+      `POST /api/documents/{id}/analyze[?force=true]` (synchronous; 409 if parsed/in progress).
+      No schema change. Default model `gemini-3.8-flash` (2.5-flash is closed to new users).
+      Free tier = 5 requests/min/model → `AI_REQUESTS_PER_MINUTE` (process-wide limiter per
+      model); 429 waits the server's `retry in Ns` (max 90 s, 3×), longer = quota exhausted.
+      Verified end-to-end on 2026-09-28 (paid tier) with the real 24-page Spektrum B1+ PDF:
+      12 chapters with correct page ranges, 738 items, 0 rejected, ~150 s at 60 RPM; every
+      bulleted German entry covered. Grounding ignores whitespace so entries wrapped across
+      lines (soft hyphens, "Dürer-
+Haus", "sinkt/
+geht") are not rejected.
+- [x] STEP 4 — `GET /api/documents/{id}/chapters` (reading order, `vocabulary_count` via one
+      LEFT JOIN/GROUP BY query, `[]` before analysis, 404 unknown document) and
+      `GET /api/chapters/{id}/vocabulary` (all item fields in PDF order, 404 unknown chapter),
+      served by `ChapterService`. **First milestone complete** (verified with the real PDF:
+      12 chapters, 738 items).
 - [ ] Later — learning sessions, quizzes, answer evaluation, progress, weak review, frontend.
