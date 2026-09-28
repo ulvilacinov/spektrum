@@ -93,6 +93,7 @@ Status codes: 409 already parsed / in progress, 422 PDF without text layer,
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/api/learning-sessions` | `{"chapter_id": 1, "batch_size": 10, "mode": "new"}`: start a batch (size 1-100, default 10). `mode=review` picks studied but unmastered words, weak ones first. |
+| GET | `/api/learning-sessions/{id}` | The session with its chapter title and document id. |
 | GET | `/api/learning-sessions/{id}/items` | The batch's words in order, each with its learning status. |
 | POST | `/api/learning-sessions/{id}/quiz` | Create the batch's quiz (201), or return the existing one (200). |
 | POST | `/api/quiz/{question_id}/answer` | `{"answer": "die"}`: evaluate once, return Turkish feedback and the word's new status. |

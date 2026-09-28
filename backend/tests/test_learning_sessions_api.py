@@ -195,3 +195,26 @@ def test_sessions_and_progress_are_per_user(client: TestClient, chapter_id: int)
     assert client.get(f"/api/learning-sessions/{session_id}/items").status_code == 404
     other = start(client, chapter_id).json()
     assert item_words(client, other["id"])[0] == "Wort1"  # user 2 starts from the beginning
+
+
+def test_get_session_says_where_it_belongs(
+    client: TestClient, sqlite_session: Session, chapter_id: int
+) -> None:
+    created = start(client, chapter_id, 5).json()
+
+    response = client.get(f"/api/learning-sessions/{created['id']}")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body == created
+    chapter = sqlite_session.get(Chapter, chapter_id)
+    assert (body["chapter_title"], body["document_id"]) == ("Kapitel 1", chapter.document_id)
+    assert body["mode"] == "new"
+
+
+def test_get_unknown_or_foreign_session_is_404(client: TestClient, chapter_id: int) -> None:
+    created = start(client, chapter_id, 5).json()
+
+    assert client.get("/api/learning-sessions/999").status_code == 404
+    client.app.dependency_overrides[get_current_user_id] = lambda: 2
+    assert client.get(f"/api/learning-sessions/{created['id']}").status_code == 404

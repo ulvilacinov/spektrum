@@ -139,6 +139,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/learning-sessions/{learning_session_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Learning Session */
+        get: operations["get_learning_session_api_learning_sessions__learning_session_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/learning-sessions/{learning_session_id}/items": {
         parameters: {
             query?: never;
@@ -408,6 +425,10 @@ export interface components {
             id: number;
             /** Chapter Id */
             chapter_id: number;
+            /** Chapter Title */
+            chapter_title: string;
+            /** Document Id */
+            document_id: number;
             /** Batch Size */
             batch_size: number;
             mode: components["schemas"]["SessionMode"];
@@ -840,6 +861,37 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LearningSessionRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_learning_session_api_learning_sessions__learning_session_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                learning_session_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

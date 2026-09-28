@@ -17,6 +17,7 @@ from app.db.base import Base, enum_column
 from app.domain.enums import SessionMode
 
 if TYPE_CHECKING:
+    from app.db.models.chapter import Chapter
     from app.db.models.vocabulary_item import VocabularyItem
 
 
@@ -48,6 +49,7 @@ class LearningSession(Base):
     )
     wrong_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
 
+    chapter: Mapped[Chapter] = relationship()
     items: Mapped[list[LearningSessionItem]] = relationship(
         back_populates="learning_session",
         cascade="all, delete-orphan",

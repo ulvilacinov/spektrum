@@ -2,7 +2,8 @@
 
 React + TypeScript (Vite) client for the backend in `../backend`. The UI is in Turkish.
 
-Current state: **F1** — document list, PDF upload, starting the analysis.
+Current state: **F2** — documents (upload, analysis), chapters with progress, starting
+a new batch or a review, learning screen with word cards.
 
 ## Requirements
 

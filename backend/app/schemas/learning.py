@@ -36,6 +36,8 @@ class LearningSessionCreate(BaseModel):
 class LearningSessionRead(BaseModel):
     id: int
     chapter_id: int
+    chapter_title: str
+    document_id: int
     batch_size: int
     mode: SessionMode
     item_count: int = Field(description="Can be below batch_size for the chapter's last batch.")
@@ -49,6 +51,8 @@ class LearningSessionRead(BaseModel):
         return cls(
             id=learning_session.id,
             chapter_id=learning_session.chapter_id,
+            chapter_title=learning_session.chapter.title,
+            document_id=learning_session.chapter.document_id,
             batch_size=learning_session.batch_size,
             mode=learning_session.mode,
             item_count=len(learning_session.items),

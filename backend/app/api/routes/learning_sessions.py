@@ -31,6 +31,16 @@ def start_learning_session(
     return LearningSessionRead.from_session(learning_session)
 
 
+@router.get("/{learning_session_id}", response_model=LearningSessionRead)
+def get_learning_session(
+    learning_session_id: int,
+    user_id: CurrentUserId,
+    service: LearningSessionServiceDep,
+) -> LearningSessionRead:
+    learning_session = service.get(user_id=user_id, learning_session_id=learning_session_id)
+    return LearningSessionRead.from_session(learning_session)
+
+
 @router.get("/{learning_session_id}/items", response_model=list[LearningSessionItemRead])
 def list_learning_session_items(
     learning_session_id: int,

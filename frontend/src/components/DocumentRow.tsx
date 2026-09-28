@@ -1,3 +1,5 @@
+import { Link } from 'react-router'
+
 import { errorMessage } from '../api/client'
 import { useAnalyzeDocument, type Document } from '../api/documents'
 import { formatDateTime } from '../lib/format'
@@ -37,9 +39,14 @@ export function DocumentRow({ document }: { document: Document }) {
             birkaç dakika sürebilir…
           </p>
         ) : document.status === 'parsed' ? (
-          <button type="button" className="secondary" onClick={() => start(true)}>
-            Yeniden analiz et
-          </button>
+          <>
+            <Link className="button" to={`/documents/${document.id}`}>
+              Bölümlere git
+            </Link>
+            <button type="button" className="secondary" onClick={() => start(true)}>
+              Yeniden analiz et
+            </button>
+          </>
         ) : (
           <button type="button" onClick={() => start(false)}>
             Analiz et

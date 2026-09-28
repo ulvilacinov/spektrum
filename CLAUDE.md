@@ -155,6 +155,9 @@ geht") are not rejected.
 - [x] F1 — frontend scaffold, typed API client, documents page: list with status, PDF
       upload (client-side .pdf check, Turkish API errors), analyze / re-analyze (confirmation,
       because re-analysis deletes learning progress), polling while a document is parsing.
-- [ ] F2 — chapter list with progress (`/api/progress`), start new batch / review.
-- [ ] F3 — learning screen (session words) and quiz with Turkish feedback per answer.
-- [ ] F4 — weak words with last mistakes, batch-locked / unlocked flow.
+- [x] F2 — `/documents/:id`: chapters with segmented progress (`/api/progress`), batch size
+      5/10/20, "new batch" / "review" buttons enabled by `can_start_new_batch` / `can_review`;
+      `/sessions/:id`: learning screen with word cards (meaning, grammar, example, PDF page).
+      Backend: `GET /api/learning-sessions/{id}` (with `chapter_title`, `document_id`).
+- [ ] F3 — quiz for a session with Turkish feedback after each answer, session summary.
+- [ ] F4 — weak words with last mistakes (`/api/review/weak`), review from there.
