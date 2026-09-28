@@ -6,6 +6,7 @@ import type {
   Progress,
   SessionItem,
   VocabularyItem,
+  WeakWord,
 } from '../api/learning'
 
 export function document(overrides: Partial<Document> = {}): Document {
@@ -138,5 +139,37 @@ export function answered(
     evaluation_method: correct ? 'exact' : 'ai',
     answered_at: '2026-09-28T10:05:00Z',
     ...overrides,
+  }
+}
+
+export function weakWord(
+  id: number,
+  word: Partial<VocabularyItem> = {},
+  mistake: Partial<NonNullable<WeakWord['last_mistake']>> | null = {},
+): WeakWord {
+  return {
+    vocabulary_item: vocabulary({ id, german: `Wort${id}`, turkish: `kelime${id}`, ...word }),
+    progress: {
+      status: 'weak',
+      seen_count: 2,
+      correct_count: 1,
+      wrong_count: 1,
+      consecutive_correct: 0,
+      mastery_score: 0,
+      last_seen_at: '2026-09-28T10:05:00Z',
+      next_review_at: null,
+    },
+    last_mistake: mistake && {
+      question_id: 100 + id,
+      question_type: 'turkish_to_german',
+      question: `„kelime${id}“ Almanca nasıl söylenir?`,
+      user_answer: 'falsch',
+      expected_answer: `Wort${id}`,
+      corrected_answer: `Wort${id}`,
+      feedback: 'Anlam yanlış.',
+      error_type: 'meaning',
+      answered_at: '2026-09-28T10:05:00Z',
+      ...mistake,
+    },
   }
 }

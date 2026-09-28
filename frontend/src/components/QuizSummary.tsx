@@ -46,6 +46,14 @@ export function QuizSummary({ session, questions }: Props) {
           >
             Bölümlere dön
           </Link>
+          {wrong > 0 && (
+            <Link
+              className="button button--secondary"
+              to={`/documents/${session.document_id}/weak`}
+            >
+              Bütün zayıf kelimelerim
+            </Link>
+          )}
         </div>
         {review.isError && (
           <p className="error" role="alert">

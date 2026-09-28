@@ -54,6 +54,7 @@ export function useAnswerQuestion(sessionId: number) {
       queryClient.invalidateQueries({
         queryKey: learningKeys.progress(result.learning_session.document_id),
       })
+      queryClient.invalidateQueries({ queryKey: learningKeys.allWeakWords })
     },
   })
 }

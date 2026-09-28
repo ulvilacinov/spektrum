@@ -45,6 +45,11 @@ function DocumentChapters({ documentId }: { documentId: number }) {
           {Math.round(progress.data.mastery_ratio * 100)} öğrenildi
         </p>
         <ProgressBar counts={progress.data} />
+        {progress.data.weak > 0 && (
+          <Link to={`/documents/${documentId}/weak`}>
+            Zayıf kelimelerim ({progress.data.weak}) ve son hatalarım →
+          </Link>
+        )}
         <label className="batch-size">
           Bir seferde kaç kelime?{' '}
           <select value={batchSize} onChange={(event) => setBatchSize(Number(event.target.value))}>

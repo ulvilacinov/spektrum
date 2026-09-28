@@ -488,3 +488,9 @@ select:focus-visible {
 .summary-item--wrong {
   border-left: 6px solid var(--error);
 }
+
+.weak__mistake {
+  gap: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+}

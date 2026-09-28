@@ -8,11 +8,14 @@ export type LearningSession = Schemas['LearningSessionRead']
 export type SessionItem = Schemas['LearningSessionItemRead']
 export type VocabularyItem = Schemas['VocabularyItemRead']
 export type SessionMode = Schemas['SessionMode']
+export type WeakWord = Schemas['WeakWordRead']
 
 export const learningKeys = {
   progress: (documentId: number) => ['progress', documentId] as const,
   session: (sessionId: number) => ['learning-sessions', sessionId] as const,
   sessionItems: (sessionId: number) => ['learning-sessions', sessionId, 'items'] as const,
+  weakWords: (documentId: number) => ['review', 'weak', documentId] as const,
+  allWeakWords: ['review', 'weak'] as const,
 }
 
 export function useDocument(documentId: number) {
@@ -65,6 +68,19 @@ export function useSessionItems(sessionId: number) {
       unwrap(
         await api.GET('/api/learning-sessions/{learning_session_id}/items', {
           params: { path: { learning_session_id: sessionId } },
+        }),
+      ),
+  })
+}
+
+/** The document's weak words (longest due first), each with the latest mistake. */
+export function useWeakWords(documentId: number) {
+  return useQuery({
+    queryKey: learningKeys.weakWords(documentId),
+    queryFn: async () =>
+      unwrap(
+        await api.GET('/api/review/weak', {
+          params: { query: { document_id: documentId, limit: 200 } },
         }),
       ),
   })

@@ -165,4 +165,8 @@ geht") are not rejected.
       (correct/wrong, book answer, AI correction, Turkish explanation, error type, score, new
       word status), retry after an AI failure, summary with "review weak words". Prettier added
       (`npm run format`, `format:check`).
-- [ ] F4 — weak words with last mistakes (`/api/review/weak`), review from there.
+- [x] F4 — `/documents/:id/weak`: weak words grouped by chapter in reading order, each with
+      its latest mistake (question, answer, book answer, correction, Turkish explanation, error
+      type) and wrong/correct counts; "review this chapter" starts a review session with
+      batch_size = the chapter's weak count (review picks weak words first). Linked from the
+      document page (when weak > 0) and the quiz summary. Answering invalidates the weak list.
