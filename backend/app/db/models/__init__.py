@@ -2,6 +2,7 @@
 from app.db.models.chapter import Chapter
 from app.db.models.document import Document
 from app.db.models.learning_session import LearningSession, LearningSessionItem
+from app.db.models.quiz_question import QuizQuestion
 from app.db.models.user_vocabulary_progress import UserVocabularyProgress
 from app.db.models.vocabulary_item import VocabularyItem
 
@@ -10,6 +11,7 @@ __all__ = [
     "Document",
     "LearningSession",
     "LearningSessionItem",
+    "QuizQuestion",
     "UserVocabularyProgress",
     "VocabularyItem",
 ]

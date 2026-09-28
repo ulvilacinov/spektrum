@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.db.models import (
     LearningSession,
     LearningSessionItem,
+    QuizQuestion,
     UserVocabularyProgress,
     VocabularyItem,
 )
@@ -53,7 +54,7 @@ class LearningRepository:
         )
         return {row.vocabulary_item_id: row for row in self.session.scalars(statement)}
 
-    def add(self, *objects: LearningSession | UserVocabularyProgress) -> None:
+    def add(self, *objects: LearningSession | UserVocabularyProgress | QuizQuestion) -> None:
         self.session.add_all(objects)
         self.session.flush()
 
@@ -70,3 +71,11 @@ class LearningRepository:
             .order_by(LearningSessionItem.position)
         )
         return [(item, vocabulary) for item, vocabulary in self.session.execute(statement)]
+
+    def quiz_questions(self, learning_session_id: int) -> Sequence[QuizQuestion]:
+        statement = (
+            select(QuizQuestion)
+            .where(QuizQuestion.learning_session_id == learning_session_id)
+            .order_by(QuizQuestion.position)
+        )
+        return self.session.scalars(statement).all()

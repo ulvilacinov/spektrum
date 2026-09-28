@@ -1,12 +1,12 @@
 from datetime import datetime
 from typing import Self
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.db.models import LearningSession
-from app.domain.enums import VocabularyStatus
+from app.domain.enums import QuestionType, VocabularyStatus
 from app.schemas.vocabulary import VocabularyItemRead
-from app.services.learning import SessionItem
+from app.services.learning import Quiz, SessionItem
 
 DEFAULT_BATCH_SIZE = 10
 MAX_BATCH_SIZE = 100
@@ -57,4 +57,34 @@ class LearningSessionItemRead(BaseModel):
             position=item.position,
             status=item.progress.status if item.progress else VocabularyStatus.NEW,
             vocabulary_item=VocabularyItemRead.model_validate(item.vocabulary_item),
+        )
+
+
+class QuizQuestionRead(BaseModel):
+    """A question as shown to the learner. The expected answer stays hidden."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    position: int
+    vocabulary_item_id: int
+    question_type: QuestionType
+    question: str
+    user_answer: str | None
+    is_correct: bool | None
+    ai_feedback: str | None
+
+
+class QuizRead(BaseModel):
+    learning_session_id: int
+    question_count: int
+    questions: list[QuizQuestionRead]
+
+    @classmethod
+    def from_quiz(cls, quiz: Quiz) -> Self:
+        questions = [QuizQuestionRead.model_validate(question) for question in quiz.questions]
+        return cls(
+            learning_session_id=quiz.learning_session.id,
+            question_count=len(questions),
+            questions=questions,
         )

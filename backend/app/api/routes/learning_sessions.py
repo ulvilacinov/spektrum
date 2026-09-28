@@ -1,10 +1,11 @@
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Response, status
 
-from app.api.dependencies import CurrentUserId, LearningSessionServiceDep
+from app.api.dependencies import CurrentUserId, LearningSessionServiceDep, QuizServiceDep
 from app.schemas.learning import (
     LearningSessionCreate,
     LearningSessionItemRead,
     LearningSessionRead,
+    QuizRead,
 )
 
 router = APIRouter(prefix="/learning-sessions", tags=["learning"])
@@ -32,3 +33,22 @@ def list_learning_session_items(
     """The words of the batch in display order, with their current learning status."""
     items = service.items(user_id=user_id, learning_session_id=learning_session_id)
     return [LearningSessionItemRead.from_item(item) for item in items]
+
+
+@router.post(
+    "/{learning_session_id}/quiz",
+    response_model=QuizRead,
+    status_code=status.HTTP_201_CREATED,
+    responses={200: {"model": QuizRead, "description": "The quiz already existed."}},
+)
+def create_quiz(
+    learning_session_id: int,
+    user_id: CurrentUserId,
+    service: QuizServiceDep,
+    response: Response,
+) -> QuizRead:
+    """Create the batch's quiz (one question per word); calling it again returns the same quiz."""
+    quiz = service.get_or_create(user_id=user_id, learning_session_id=learning_session_id)
+    if not quiz.created:
+        response.status_code = status.HTTP_200_OK
+    return QuizRead.from_quiz(quiz)

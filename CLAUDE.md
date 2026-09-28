@@ -47,7 +47,9 @@ Alembic, PostgreSQL 16, PyMuPDF, Gemini (behind a provider abstraction), pytest,
   vocabulary (routes build responses with `ChapterSummaryRead.from_chapter`).
 - `app/services/learning/` — `progression.py`: `ProgressionPolicy` / `SimpleProgressionPolicy`,
   the only code that changes a `UserVocabularyProgress` status (wired in
-  `get_progression_policy()`); `sessions.py`: `LearningSessionService`.
+  `get_progression_policy()`); `sessions.py`: `LearningSessionService`;
+  `question_generation.py`: deterministic, weighted question builders (no AI);
+  `quiz.py`: `QuizService`.
 - The acting user comes from `get_current_user_id()` (`DEFAULT_USER_ID` until auth exists).
 - Services are wired in `app/api/dependencies.py` (e.g. `DocumentServiceDep`).
 
@@ -117,8 +119,15 @@ geht") are not rejected.
       chapter's next unstudied items in PDF order (409 `no_new_vocabulary` when done),
       `GET /api/learning-sessions/{id}/items` (with status; other users' sessions → 404).
       Re-analysis with force=true cascades and deletes sessions and progress.
-- [ ] STEP 6 — quiz generation for a session (`QuizQuestion`, `POST /api/learning-sessions/{id}/quiz`).
+- [x] STEP 6 — `QuizQuestion` (migration 0003), `POST /api/learning-sessions/{id}/quiz`: one
+      question per session word, built from stored fields without AI (german_to_turkish,
+      turkish_to_german, article, preposition, verb_conjugation, sentence_translation;
+      weighted 2/3/2/2/1/1, seeded by session id). Turkish question texts; expected answers
+      are never returned. 201 on create, 200 with the same quiz afterwards. fill_blank and
+      free_sentence need AI and are not generated yet.
 - [ ] STEP 7 — answer evaluation (`POST /api/quiz/{question_id}/answer`: exact → normalized →
-      AI, Turkish feedback) feeding `ProgressionPolicy.record_answer`.
+      AI, Turkish feedback) feeding `ProgressionPolicy.record_answer`. Expected answers
+      contain alternatives ("ins Büro/zur Uni") and optional parts in parentheses
+      ("an (ein tolles Konzert) denken"); deterministic matching must accept each variant.
 - [ ] STEP 8 — `GET /api/progress`, `GET /api/review/weak`, batch unlocking.
 - [ ] Later — frontend (React + TypeScript).

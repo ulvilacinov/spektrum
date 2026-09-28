@@ -1,8 +1,8 @@
 # German Vocabulary Trainer — Backend
 
 FastAPI backend for an AI-assisted German → Turkish vocabulary learning app.
-Current state: **STEP 5**: first milestone (PDF upload, AI chapter and vocabulary extraction,
-chapter and vocabulary endpoints) plus learning sessions and vocabulary progress.
+Current state: **STEP 6**: first milestone (PDF upload, AI chapter and vocabulary extraction,
+chapter and vocabulary endpoints), learning sessions, vocabulary progress and quizzes.
 
 ## Requirements
 
@@ -93,12 +93,18 @@ Status codes: 409 already parsed / in progress, 422 PDF without text layer,
 |--------|------|-------------|
 | POST | `/api/learning-sessions` | `{"chapter_id": 1, "batch_size": 10}` (1-100, default 10): start a batch with the chapter's next unstudied words. |
 | GET | `/api/learning-sessions/{id}/items` | The batch's words in order, each with its learning status. |
+| POST | `/api/learning-sessions/{id}/quiz` | Create the batch's quiz (201), or return the existing one (200). |
 
 Starting a session marks its words as studied (`new` → `learning`). When every word of the
 chapter has been studied the API answers 409 `no_new_vocabulary`. Status changes are made only
 by `ProgressionPolicy` (`app/services/learning/progression.py`): a wrong answer makes a word
 `weak`, two correct answers in a row make it `mastered`. Until authentication exists, every
 request acts as `DEFAULT_USER_ID`.
+
+Quizzes are built without AI from the stored vocabulary data: one question per word, its
+type chosen (weighted, reproducibly per session) from translation in both directions,
+article, preposition, verb conjugation and sentence translation. Question texts are in
+Turkish; the expected answers are stored but never returned before the question is answered.
 
 ### Milestone check
 

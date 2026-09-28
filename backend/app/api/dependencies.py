@@ -16,6 +16,7 @@ from app.services.documents import (
 from app.services.learning import (
     LearningSessionService,
     ProgressionPolicy,
+    QuizService,
     SimpleProgressionPolicy,
 )
 from app.services.pdf import PdfTextExtractor
@@ -101,3 +102,10 @@ def get_learning_session_service(
 
 
 LearningSessionServiceDep = Annotated[LearningSessionService, Depends(get_learning_session_service)]
+
+
+def get_quiz_service(db: DbSession, sessions: LearningSessionServiceDep) -> QuizService:
+    return QuizService(db, sessions=sessions)
+
+
+QuizServiceDep = Annotated[QuizService, Depends(get_quiz_service)]
