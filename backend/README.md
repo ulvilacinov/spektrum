@@ -1,8 +1,8 @@
 # German Vocabulary Trainer — Backend
 
 FastAPI backend for an AI-assisted German → Turkish vocabulary learning app.
-Current state: **first milestone complete** (STEP 1–4): PDF upload, page-by-page text
-extraction, AI chapter detection and vocabulary extraction, chapter and vocabulary endpoints.
+Current state: **STEP 5**: first milestone (PDF upload, AI chapter and vocabulary extraction,
+chapter and vocabulary endpoints) plus learning sessions and vocabulary progress.
 
 ## Requirements
 
@@ -82,9 +82,23 @@ an exhausted daily quota fails the analysis with a clear error.
 5. stores chapters and vocabulary in one transaction; the document becomes `parsed`.
 
 On failure the document becomes `failed` with `error_message` and can be analyzed again.
-An already `parsed` document needs `?force=true`, which replaces its chapters.
+An already `parsed` document needs `?force=true`, which replaces its chapters and
+therefore also deletes the learning sessions and progress of that document.
 Status codes: 409 already parsed / in progress, 422 PDF without text layer,
 502 AI error or invalid AI output, 503 AI not configured.
+
+## Learning API
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/learning-sessions` | `{"chapter_id": 1, "batch_size": 10}` (1-100, default 10): start a batch with the chapter's next unstudied words. |
+| GET | `/api/learning-sessions/{id}/items` | The batch's words in order, each with its learning status. |
+
+Starting a session marks its words as studied (`new` → `learning`). When every word of the
+chapter has been studied the API answers 409 `no_new_vocabulary`. Status changes are made only
+by `ProgressionPolicy` (`app/services/learning/progression.py`): a wrong answer makes a word
+`weak`, two correct answers in a row make it `mastered`. Until authentication exists, every
+request acts as `DEFAULT_USER_ID`.
 
 ### Milestone check
 

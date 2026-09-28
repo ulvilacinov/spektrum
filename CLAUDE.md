@@ -45,7 +45,10 @@ Alembic, PostgreSQL 16, PyMuPDF, Gemini (behind a provider abstraction), pytest,
   (rejects items whose `source_text` is not on the page), one final transaction.
 - `app/services/documents/chapters.py` — `ChapterService`: read access to chapters and
   vocabulary (routes build responses with `ChapterSummaryRead.from_chapter`).
-- `app/services/learning/` — to be added.
+- `app/services/learning/` — `progression.py`: `ProgressionPolicy` / `SimpleProgressionPolicy`,
+  the only code that changes a `UserVocabularyProgress` status (wired in
+  `get_progression_policy()`); `sessions.py`: `LearningSessionService`.
+- The acting user comes from `get_current_user_id()` (`DEFAULT_USER_ID` until auth exists).
 - Services are wired in `app/api/dependencies.py` (e.g. `DocumentServiceDep`).
 
 ## Conventions
@@ -108,4 +111,14 @@ geht") are not rejected.
       `GET /api/chapters/{id}/vocabulary` (all item fields in PDF order, 404 unknown chapter),
       served by `ChapterService`. **First milestone complete** (verified with the real PDF:
       12 chapters, 738 items).
-- [ ] Later — learning sessions, quizzes, answer evaluation, progress, weak review, frontend.
+- [x] STEP 5 — `UserVocabularyProgress`, `LearningSession`, `LearningSessionItem` (migration
+      0002), `SimpleProgressionPolicy` (new→learning on study, wrong→weak, 2 correct in a
+      row→mastered), `POST /api/learning-sessions` {chapter_id, batch_size 1-100, default 10} picks the
+      chapter's next unstudied items in PDF order (409 `no_new_vocabulary` when done),
+      `GET /api/learning-sessions/{id}/items` (with status; other users' sessions → 404).
+      Re-analysis with force=true cascades and deletes sessions and progress.
+- [ ] STEP 6 — quiz generation for a session (`QuizQuestion`, `POST /api/learning-sessions/{id}/quiz`).
+- [ ] STEP 7 — answer evaluation (`POST /api/quiz/{question_id}/answer`: exact → normalized →
+      AI, Turkish feedback) feeding `ProgressionPolicy.record_answer`.
+- [ ] STEP 8 — `GET /api/progress`, `GET /api/review/weak`, batch unlocking.
+- [ ] Later — frontend (React + TypeScript).

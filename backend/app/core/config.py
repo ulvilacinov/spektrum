@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     upload_dir: Path = Field(default=Path("uploads"))
     max_upload_size_mb: int = Field(default=20, gt=0)
 
+    # Until authentication exists every request acts as this user.
+    default_user_id: int = Field(default=1, gt=0)
+
     ai_provider: Literal["gemini"] = "gemini"
     # Pages sent to the AI in one vocabulary-extraction request; long chapters are split.
     ai_max_pages_per_request: int = Field(default=5, gt=0)

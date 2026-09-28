@@ -13,6 +13,11 @@ from app.services.documents import (
     DocumentService,
     LocalFileStorage,
 )
+from app.services.learning import (
+    LearningSessionService,
+    ProgressionPolicy,
+    SimpleProgressionPolicy,
+)
 from app.services.pdf import PdfTextExtractor
 
 
@@ -73,3 +78,26 @@ def get_document_analysis_service(
 DocumentAnalysisServiceDep = Annotated[
     DocumentAnalysisService, Depends(get_document_analysis_service)
 ]
+
+
+def get_current_user_id(settings: AppSettings) -> int:
+    """The acting user. The single seam to replace once authentication exists."""
+    return settings.default_user_id
+
+
+CurrentUserId = Annotated[int, Depends(get_current_user_id)]
+
+
+def get_progression_policy() -> ProgressionPolicy:
+    """The learning-progression rules; swap here for e.g. spaced repetition."""
+    return SimpleProgressionPolicy()
+
+
+def get_learning_session_service(
+    db: DbSession,
+    policy: Annotated[ProgressionPolicy, Depends(get_progression_policy)],
+) -> LearningSessionService:
+    return LearningSessionService(db, policy=policy)
+
+
+LearningSessionServiceDep = Annotated[LearningSessionService, Depends(get_learning_session_service)]
