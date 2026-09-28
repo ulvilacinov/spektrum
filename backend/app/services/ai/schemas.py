@@ -9,7 +9,7 @@ from typing import Annotated, Any
 
 from pydantic import BaseModel, BeforeValidator, Field
 
-from app.domain.enums import VocabularyItemType
+from app.domain.enums import ErrorType, QuestionType, VocabularyItemType
 
 
 def _blank_to_none(value: Any) -> Any:
@@ -79,3 +79,45 @@ class VocabularyExtractionResult(BaseModel):
     @property
     def items(self) -> list[ExtractedVocabularyItem]:
         return [item for section in self.sections for item in section.items]
+
+
+_ERROR_TYPES = frozenset(member.value for member in ErrorType)
+
+
+def _error_type(value: Any) -> Any:
+    if isinstance(value, str):
+        value = value.strip().lower()
+        return value if value in _ERROR_TYPES else None
+    return value
+
+
+def _score(value: Any) -> Any:
+    if isinstance(value, int | float):
+        return min(max(float(value), 0.0), 1.0)
+    return value
+
+
+class AnswerEvaluationRequest(BaseModel):
+    """What the AI needs to judge one quiz answer (input, not AI output)."""
+
+    question_type: QuestionType
+    question: str
+    expected_answer: str
+    user_answer: str
+    answer_language: str  # "German" or "Turkish"
+    german: str
+    turkish: str
+
+
+class AnswerEvaluationResult(BaseModel):
+    is_correct: bool
+    score: Annotated[float, BeforeValidator(_score)] = Field(
+        description="1.0 fully correct … 0.0 unrelated; partial credit in between."
+    )
+    corrected_answer: OptionalText = Field(
+        default=None, description="The learner's answer minimally corrected."
+    )
+    explanation: str = Field(description="Short feedback for the learner, in Turkish.")
+    error_type: Annotated[ErrorType | None, BeforeValidator(_error_type)] = Field(
+        default=None, description="Main error when incorrect; null when correct."
+    )

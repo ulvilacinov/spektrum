@@ -1,6 +1,7 @@
 from collections.abc import Iterable, Sequence
+from datetime import datetime
 
-from sqlalchemy import and_, or_, select
+from sqlalchemy import and_, func, or_, select, update
 from sqlalchemy.orm import Session
 
 from app.db.models import (
@@ -10,7 +11,7 @@ from app.db.models import (
     UserVocabularyProgress,
     VocabularyItem,
 )
-from app.domain.enums import VocabularyStatus
+from app.domain.enums import ErrorType, EvaluationMethod, VocabularyStatus
 
 
 class LearningRepository:
@@ -79,3 +80,52 @@ class LearningRepository:
             .order_by(QuizQuestion.position)
         )
         return self.session.scalars(statement).all()
+
+    def question_with_context(
+        self, question_id: int
+    ) -> tuple[QuizQuestion, LearningSession, VocabularyItem] | None:
+        statement = (
+            select(QuizQuestion, LearningSession, VocabularyItem)
+            .join(LearningSession, LearningSession.id == QuizQuestion.learning_session_id)
+            .join(VocabularyItem, VocabularyItem.id == QuizQuestion.vocabulary_item_id)
+            .where(QuizQuestion.id == question_id)
+        )
+        row = self.session.execute(statement).one_or_none()
+        return None if row is None else (row[0], row[1], row[2])
+
+    def record_answer(
+        self,
+        question_id: int,
+        *,
+        user_answer: str,
+        is_correct: bool,
+        score: float,
+        corrected_answer: str,
+        ai_feedback: str,
+        error_type: ErrorType | None,
+        evaluation_method: EvaluationMethod,
+        answered_at: datetime,
+    ) -> bool:
+        """Store the answer unless the question already has one (single conditional UPDATE)."""
+        result = self.session.execute(
+            update(QuizQuestion)
+            .where(QuizQuestion.id == question_id, QuizQuestion.user_answer.is_(None))
+            .values(
+                user_answer=user_answer,
+                is_correct=is_correct,
+                score=score,
+                corrected_answer=corrected_answer,
+                ai_feedback=ai_feedback,
+                error_type=error_type,
+                evaluation_method=evaluation_method,
+                answered_at=answered_at,
+            )
+        )
+        return result.rowcount == 1
+
+    def unanswered_question_count(self, learning_session_id: int) -> int:
+        statement = select(func.count(QuizQuestion.id)).where(
+            QuizQuestion.learning_session_id == learning_session_id,
+            QuizQuestion.user_answer.is_(None),
+        )
+        return self.session.scalar(statement) or 0

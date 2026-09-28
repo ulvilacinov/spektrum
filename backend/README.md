@@ -1,8 +1,9 @@
 # German Vocabulary Trainer — Backend
 
 FastAPI backend for an AI-assisted German → Turkish vocabulary learning app.
-Current state: **STEP 6**: first milestone (PDF upload, AI chapter and vocabulary extraction,
-chapter and vocabulary endpoints), learning sessions, vocabulary progress and quizzes.
+Current state: **STEP 7**: first milestone (PDF upload, AI chapter and vocabulary extraction,
+chapter and vocabulary endpoints), learning sessions, vocabulary progress, quizzes and
+answer evaluation with Turkish feedback.
 
 ## Requirements
 
@@ -94,6 +95,7 @@ Status codes: 409 already parsed / in progress, 422 PDF without text layer,
 | POST | `/api/learning-sessions` | `{"chapter_id": 1, "batch_size": 10}` (1-100, default 10): start a batch with the chapter's next unstudied words. |
 | GET | `/api/learning-sessions/{id}/items` | The batch's words in order, each with its learning status. |
 | POST | `/api/learning-sessions/{id}/quiz` | Create the batch's quiz (201), or return the existing one (200). |
+| POST | `/api/quiz/{question_id}/answer` | `{"answer": "die"}`: evaluate once, return Turkish feedback and the word's new status. |
 
 Starting a session marks its words as studied (`new` → `learning`). When every word of the
 chapter has been studied the API answers 409 `no_new_vocabulary`. Status changes are made only
@@ -105,6 +107,12 @@ Quizzes are built without AI from the stored vocabulary data: one question per w
 type chosen (weighted, reproducibly per session) from translation in both directions,
 article, preposition, verb conjugation and sentence translation. Question texts are in
 Turkish; the expected answers are stored but never returned before the question is answered.
+
+Answers are checked in three steps: an exact match, then a normalized comparison (case,
+punctuation, alternatives written with "/", optional parts in parentheses, Turkish letters
+typed without diacritics, German ae/oe/ue/ss), and only then the AI for open questions
+(translations). Closed questions (article, preposition, verb form) never call the AI. If the
+AI fails, nothing is stored and the learner can answer again.
 
 ### Milestone check
 

@@ -1,12 +1,12 @@
 from datetime import datetime
 from typing import Self
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.db.models import LearningSession
-from app.domain.enums import QuestionType, VocabularyStatus
+from app.db.models import LearningSession, QuizQuestion
+from app.domain.enums import ErrorType, EvaluationMethod, QuestionType, VocabularyStatus
 from app.schemas.vocabulary import VocabularyItemRead
-from app.services.learning import Quiz, SessionItem
+from app.services.learning import AnswerOutcome, Quiz, SessionItem
 
 DEFAULT_BATCH_SIZE = 10
 MAX_BATCH_SIZE = 100
@@ -61,7 +61,7 @@ class LearningSessionItemRead(BaseModel):
 
 
 class QuizQuestionRead(BaseModel):
-    """A question as shown to the learner. The expected answer stays hidden."""
+    """A question as shown to the learner. Answer fields stay empty until it is answered."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -72,7 +72,20 @@ class QuizQuestionRead(BaseModel):
     question: str
     user_answer: str | None
     is_correct: bool | None
-    ai_feedback: str | None
+    score: float | None
+    expected_answer: str | None = Field(description="Revealed only after answering.")
+    corrected_answer: str | None
+    ai_feedback: str | None = Field(description="Turkish explanation of the evaluation.")
+    error_type: ErrorType | None
+    evaluation_method: EvaluationMethod | None
+    answered_at: datetime | None
+
+    @classmethod
+    def from_question(cls, question: QuizQuestion) -> Self:
+        read = cls.model_validate(question)
+        if question.user_answer is None:
+            read.expected_answer = None
+        return read
 
 
 class QuizRead(BaseModel):
@@ -82,9 +95,35 @@ class QuizRead(BaseModel):
 
     @classmethod
     def from_quiz(cls, quiz: Quiz) -> Self:
-        questions = [QuizQuestionRead.model_validate(question) for question in quiz.questions]
+        questions = [QuizQuestionRead.from_question(question) for question in quiz.questions]
         return cls(
             learning_session_id=quiz.learning_session.id,
             question_count=len(questions),
             questions=questions,
+        )
+
+
+class AnswerSubmit(BaseModel):
+    answer: str = Field(min_length=1, max_length=1000)
+
+    @field_validator("answer")
+    @classmethod
+    def not_blank(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("The answer must not be empty.")
+        return value
+
+
+class AnswerResultRead(BaseModel):
+    question: QuizQuestionRead
+    vocabulary_status: VocabularyStatus
+    learning_session: LearningSessionRead
+
+    @classmethod
+    def from_outcome(cls, outcome: AnswerOutcome) -> Self:
+        return cls(
+            question=QuizQuestionRead.from_question(outcome.question),
+            vocabulary_status=outcome.progress.status,
+            learning_session=LearningSessionRead.from_session(outcome.learning_session),
         )

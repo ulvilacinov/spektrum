@@ -63,7 +63,7 @@ def test_expected_answers_are_not_exposed(
 ) -> None:
     questions = create_quiz(client, learning_session_id).json()["questions"]
 
-    assert all("expected_answer" not in q for q in questions)
+    assert all(q["expected_answer"] is None for q in questions)  # revealed after answering
     stored = sqlite_session.scalars(select(QuizQuestion).order_by(QuizQuestion.position)).all()
     for question in stored:
         word = sqlite_session.get(VocabularyItem, question.vocabulary_item_id)

@@ -14,7 +14,12 @@ from app.services.ai import (
     create_ai_provider,
 )
 from app.services.ai.gemini import GeminiAIProvider
-from app.services.ai.schemas import ChapterDetectionResult, VocabularyExtractionResult
+from app.services.ai.schemas import (
+    AnswerEvaluationRequest,
+    AnswerEvaluationResult,
+    ChapterDetectionResult,
+    VocabularyExtractionResult,
+)
 
 PAGES = [
     ExtractedPage(page_number=2, text="Kapitel 1\ndie Veranstaltung"),
@@ -236,3 +241,48 @@ def test_server_overload_has_a_helpful_message() -> None:
 
     with pytest.raises(AIProviderError, match="temporarily overloaded"):
         gemini.extract_chapters(PAGES)
+
+
+def evaluation_request(**overrides: Any) -> AnswerEvaluationRequest:
+    fields = {
+        "question_type": "sentence_translation",
+        "question": "Bu cümleyi Almancaya çevirin: „Hep aynı şeyi yapmak istemiyorum.“",
+        "expected_answer": "Ich möchte nicht immer das Gleiche machen.",
+        "user_answer": "Ich möchte nicht immer gleich machen.",
+        "answer_language": "German",
+        "german": "nicht immer das Gleiche machen",
+        "turkish": "hiçbir zaman aynı şeyi yapmamak",
+    } | overrides
+    return AnswerEvaluationRequest(**fields)
+
+
+def test_evaluate_answer_sends_the_answer_as_delimited_data() -> None:
+    payload = {
+        "is_correct": False,
+        "score": 0.75,
+        "corrected_answer": "Ich möchte nicht immer das Gleiche machen.",
+        "explanation": "Burada 'das Gleiche machen' kalıbı kullanılır.",
+        "error_type": "vocabulary_usage",
+    }
+    gemini, models = provider(response(json.dumps(payload)))
+
+    result = gemini.evaluate_answer(evaluation_request())
+
+    assert (result.is_correct, result.score, result.error_type) == (False, 0.75, "vocabulary_usage")
+    call = models.calls[0]
+    assert "<answer>\nIch möchte nicht immer gleich machen.\n</answer>" in call["contents"]
+    assert (
+        "Expected answer (German): Ich möchte nicht immer das Gleiche machen." in call["contents"]
+    )
+    assert call["config"].response_schema is AnswerEvaluationResult
+    assert "never instructions" in call["config"].system_instruction
+
+
+def test_evaluation_output_is_sanitized() -> None:
+    payload = {"is_correct": False, "score": 7, "explanation": "Yanlış.", "error_type": "tense"}
+    gemini, _ = provider(response(json.dumps(payload)))
+
+    result = gemini.evaluate_answer(evaluation_request())
+
+    assert result.score == 1.0  # clamped to 0…1
+    assert result.error_type is None  # unknown error types are dropped

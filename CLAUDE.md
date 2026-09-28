@@ -49,7 +49,10 @@ Alembic, PostgreSQL 16, PyMuPDF, Gemini (behind a provider abstraction), pytest,
   the only code that changes a `UserVocabularyProgress` status (wired in
   `get_progression_policy()`); `sessions.py`: `LearningSessionService`;
   `question_generation.py`: deterministic, weighted question builders (no AI);
-  `quiz.py`: `QuizService`.
+  `quiz.py`: `QuizService`; `answer_matching.py`: deterministic exact/normalized matching
+  with "/" alternatives and optional "( )" parts; `answers.py`: `AnswerService`.
+- Services that need the AI only sometimes get `get_ai_provider_factory()` (lazy), so
+  deterministic paths work without an AI configuration.
 - The acting user comes from `get_current_user_id()` (`DEFAULT_USER_ID` until auth exists).
 - Services are wired in `app/api/dependencies.py` (e.g. `DocumentServiceDep`).
 
@@ -125,9 +128,13 @@ geht") are not rejected.
       weighted 2/3/2/2/1/1, seeded by session id). Turkish question texts; expected answers
       are never returned. 201 on create, 200 with the same quiz afterwards. fill_blank and
       free_sentence need AI and are not generated yet.
-- [ ] STEP 7 — answer evaluation (`POST /api/quiz/{question_id}/answer`: exact → normalized →
-      AI, Turkish feedback) feeding `ProgressionPolicy.record_answer`. Expected answers
-      contain alternatives ("ins Büro/zur Uni") and optional parts in parentheses
-      ("an (ein tolles Konzert) denken"); deterministic matching must accept each variant.
+- [x] STEP 7 — `POST /api/quiz/{question_id}/answer` {answer}: exact → normalized (case,
+      punctuation, "/" alternatives, optional "( )" parts, Turkish letters without
+      diacritics, German ae/oe/ue/ss) → rule for closed types (article, preposition,
+      verb_conjugation) or `AIProvider.evaluate_answer` for open types. Turkish feedback in
+      `ai_feedback`; score, corrected_answer, error_type, evaluation_method, answered_at stored
+      (migration 0004). One answer per question (atomic conditional UPDATE, 409 otherwise);
+      AI failure stores nothing. Updates progress via `ProgressionPolicy.record_answer`,
+      session counters and `completed_at`. Verified with real Gemini (~2–5 s per AI answer).
 - [ ] STEP 8 — `GET /api/progress`, `GET /api/review/weak`, batch unlocking.
 - [ ] Later — frontend (React + TypeScript).

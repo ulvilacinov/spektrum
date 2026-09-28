@@ -34,3 +34,22 @@ class QuestionType(StrEnum):
     ARTICLE = "article"
     PREPOSITION = "preposition"
     FREE_SENTENCE = "free_sentence"
+
+
+class ErrorType(StrEnum):
+    ARTICLE = "article"
+    CASE = "case"
+    PREPOSITION = "preposition"
+    WORD_ORDER = "word_order"
+    VERB_CONJUGATION = "verb_conjugation"
+    SPELLING = "spelling"
+    VOCABULARY_USAGE = "vocabulary_usage"
+    MEANING = "meaning"
+    GRAMMAR = "grammar"
+
+
+class EvaluationMethod(StrEnum):
+    EXACT = "exact"  # identical to an expected answer
+    NORMALIZED = "normalized"  # equal after deterministic normalization
+    RULE = "rule"  # closed question (article, preposition, …) judged without AI
+    AI = "ai"

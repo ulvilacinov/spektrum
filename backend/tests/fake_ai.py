@@ -5,6 +5,8 @@ from app.domain.entities import ExtractedPage
 from app.domain.enums import VocabularyItemType
 from app.services.ai import AIProvider
 from app.services.ai.schemas import (
+    AnswerEvaluationRequest,
+    AnswerEvaluationResult,
     ChapterDetectionResult,
     DetectedChapter,
     ExtractedVocabularyItem,
@@ -38,6 +40,8 @@ class FakeAIProvider(AIProvider):
         self.error: Exception | None = None
         self.chapter_calls: list[list[int]] = []
         self.vocabulary_calls: list[tuple[str, list[int], str | None]] = []
+        self.evaluation: AnswerEvaluationResult | None = None
+        self.evaluation_calls: list[AnswerEvaluationRequest] = []
 
     def extract_chapters(self, pages: Sequence[ExtractedPage]) -> ChapterDetectionResult:
         self.chapter_calls.append([page.page_number for page in pages])
@@ -60,4 +64,17 @@ class FakeAIProvider(AIProvider):
         ]
         return VocabularyExtractionResult(
             chapter_title=chapter_title, sections=[VocabularySection(name=None, items=items)]
+        )
+
+    def evaluate_answer(self, request: AnswerEvaluationRequest) -> AnswerEvaluationResult:
+        """Returns ``self.evaluation``; by default judges the answer as wrong in meaning."""
+        self.evaluation_calls.append(request)
+        if self.error:
+            raise self.error
+        return self.evaluation or AnswerEvaluationResult(
+            is_correct=False,
+            score=0.0,
+            corrected_answer=request.expected_answer,
+            explanation="Anlam yanlış.",
+            error_type="meaning",
         )

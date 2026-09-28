@@ -13,7 +13,12 @@ from app.services.ai import prompts
 from app.services.ai.errors import AIProviderError, AIResponseError
 from app.services.ai.provider import AIProvider
 from app.services.ai.rate_limit import RateLimiter
-from app.services.ai.schemas import ChapterDetectionResult, VocabularyExtractionResult
+from app.services.ai.schemas import (
+    AnswerEvaluationRequest,
+    AnswerEvaluationResult,
+    ChapterDetectionResult,
+    VocabularyExtractionResult,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +75,13 @@ class GeminiAIProvider(AIProvider):
             system=prompts.VOCABULARY_EXTRACTION_SYSTEM,
             prompt=prompts.vocabulary_extraction_prompt(chapter_title, pages, next_chapter_title),
             schema=VocabularyExtractionResult,
+        )
+
+    def evaluate_answer(self, request: AnswerEvaluationRequest) -> AnswerEvaluationResult:
+        return self._generate(
+            system=prompts.ANSWER_EVALUATION_SYSTEM,
+            prompt=prompts.answer_evaluation_prompt(request),
+            schema=AnswerEvaluationResult,
         )
 
     def _generate[T: BaseModel](self, *, system: str, prompt: str, schema: type[T]) -> T:

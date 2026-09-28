@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-from sqlalchemy import Boolean, ForeignKey, Integer, Text, UniqueConstraint
+from datetime import datetime
+
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, enum_column
-from app.domain.enums import QuestionType
+from app.domain.enums import ErrorType, EvaluationMethod, QuestionType
 
 
 class QuizQuestion(Base):
@@ -31,7 +33,17 @@ class QuizQuestion(Base):
 
     user_answer: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_correct: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    # Turkish explanation for the learner (from the AI or a rule template).
     ai_feedback: Mapped[str | None] = mapped_column(Text, nullable=True)
+    score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    corrected_answer: Mapped[str | None] = mapped_column(Text, nullable=True)
+    error_type: Mapped[ErrorType | None] = mapped_column(
+        enum_column(ErrorType, length=32), nullable=True
+    )
+    evaluation_method: Mapped[EvaluationMethod | None] = mapped_column(
+        enum_column(EvaluationMethod, length=20), nullable=True
+    )
+    answered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     def __repr__(self) -> str:
         return (

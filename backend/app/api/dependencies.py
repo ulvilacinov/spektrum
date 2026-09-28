@@ -1,4 +1,4 @@
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from typing import Annotated
 
 from fastapi import Depends
@@ -14,6 +14,7 @@ from app.services.documents import (
     LocalFileStorage,
 )
 from app.services.learning import (
+    AnswerService,
     LearningSessionService,
     ProgressionPolicy,
     QuizService,
@@ -59,6 +60,11 @@ def get_ai_provider(settings: AppSettings) -> AIProvider:
 
 
 AIProviderDep = Annotated[AIProvider, Depends(get_ai_provider)]
+
+
+def get_ai_provider_factory(settings: AppSettings) -> Callable[[], AIProvider]:
+    """For services that need the AI only sometimes: build the provider on first use."""
+    return lambda: create_ai_provider(settings)
 
 
 def get_document_analysis_service(
@@ -109,3 +115,14 @@ def get_quiz_service(db: DbSession, sessions: LearningSessionServiceDep) -> Quiz
 
 
 QuizServiceDep = Annotated[QuizService, Depends(get_quiz_service)]
+
+
+def get_answer_service(
+    db: DbSession,
+    policy: Annotated[ProgressionPolicy, Depends(get_progression_policy)],
+    ai_provider_factory: Annotated[Callable[[], AIProvider], Depends(get_ai_provider_factory)],
+) -> AnswerService:
+    return AnswerService(db, policy=policy, ai_provider_factory=ai_provider_factory)
+
+
+AnswerServiceDep = Annotated[AnswerService, Depends(get_answer_service)]

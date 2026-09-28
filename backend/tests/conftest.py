@@ -7,7 +7,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.api.dependencies import get_ai_provider, get_db
+from app.api.dependencies import get_ai_provider, get_ai_provider_factory, get_db
 from app.core.config import Settings, get_settings
 from app.db import models  # noqa: F401
 from app.db.base import Base
@@ -65,5 +65,6 @@ def client(
     app.dependency_overrides[get_db] = lambda: sqlite_session
     app.dependency_overrides[get_settings] = lambda: settings
     app.dependency_overrides[get_ai_provider] = lambda: fake_ai
+    app.dependency_overrides[get_ai_provider_factory] = lambda: lambda: fake_ai
     with TestClient(app) as test_client:
         yield test_client
