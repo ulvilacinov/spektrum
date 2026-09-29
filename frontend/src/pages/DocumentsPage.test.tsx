@@ -1,5 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { File as NodeFile } from 'node:buffer'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { Document } from '../api/documents'
@@ -8,7 +9,7 @@ import { apiError, json, mockApi, renderRoute } from '../test/utils'
 function doc(overrides: Partial<Document> = {}): Document {
   return {
     id: 1,
-    user_id: null,
+    user_id: 1,
     original_file_name: 'spektrum_b1.pdf',
     file_name: 'abc.pdf',
     status: 'uploaded',
@@ -19,7 +20,16 @@ function doc(overrides: Partial<Document> = {}): Document {
   }
 }
 
-const pdf = () => new File(['%PDF-1.7'], 'Wortschatz.pdf', { type: 'application/pdf' })
+/**
+ * A PDF as the file input would give it (a jsdom File). vitest's jsdom→Node fetch bridge
+ * rebuilds the multipart body with the *global* File, and newer Node versions (undici) accept
+ * only their own, so Node's File is the global while the request is made.
+ */
+function pdf() {
+  const file = new File(['%PDF-1.7'], 'Wortschatz.pdf', { type: 'application/pdf' })
+  vi.stubGlobal('File', NodeFile)
+  return file
+}
 
 describe('DocumentsPage', () => {
   it('lists the documents with their status', async () => {
