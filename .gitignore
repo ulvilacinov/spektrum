@@ -1,0 +1,3 @@
+# Local database backups (personal learning data)
+backup/
+*.dump

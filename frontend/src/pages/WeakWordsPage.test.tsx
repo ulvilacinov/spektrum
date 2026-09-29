@@ -124,7 +124,7 @@ describe('WeakWordsPage', () => {
     renderRoute('/documents/1/weak')
 
     expect(await screen.findByText('Hiç zayıf kelimen yok. Harika!')).toBeInTheDocument()
-    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /tekrar et/ })).not.toBeInTheDocument()
   })
 
   it('handles an unknown document', async () => {

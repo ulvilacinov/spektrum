@@ -183,6 +183,11 @@ geht") are not rejected.
       (`lib/fun.ts` `articleOf`), quiz streak counter, stable per-question cheers, confetti on
       correct answers, shake on wrong ones, medal + score ring in the summary. All motion is
       off under `prefers-reduced-motion`. No API change.
+- [x] F6 — "📖 Dilbilgisi" header button → native `<dialog>` with static grammar reference
+      (`lib/grammar.ts`, markup "[…]" highlights endings): cases with Turkish equivalents and
+      dative verbs, der/ein/kein tables, the three adjective ending tables ("ein neues Haus"),
+      personal pronouns, prepositions by case with contractions. Remembers the last topic while
+      the app is open. Tests stub `showModal`/`close` in `src/test/setup.ts` (jsdom lacks them).
 - [x] Self-hosting — `start.ps1` (one command), backend serves `frontend/dist` when
       `FRONTEND_DIST_DIR` is set, Postgres published on 127.0.0.1 only with
       `restart: unless-stopped`, `DATABASE_URL` → 127.0.0.1, root README with Tailscale access

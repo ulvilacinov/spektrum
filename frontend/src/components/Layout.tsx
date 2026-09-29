@@ -1,5 +1,7 @@
 import { Link, Outlet } from 'react-router'
 
+import { GrammarHelp } from './GrammarHelp'
+
 export function Layout() {
   return (
     <>
@@ -16,6 +18,7 @@ export function Layout() {
               Deutsch lernen macht Spaß! · Her gün biraz, adım adım.
             </p>
           </div>
+          <GrammarHelp />
         </div>
       </header>
       <main className="main">
