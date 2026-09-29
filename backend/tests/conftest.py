@@ -7,12 +7,20 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.api.dependencies import get_ai_provider, get_ai_provider_factory, get_db
+from app.api.dependencies import (
+    get_ai_provider,
+    get_ai_provider_factory,
+    get_current_user_id,
+    get_db,
+)
 from app.core.config import Settings, get_settings
 from app.db import models  # noqa: F401
 from app.db.base import Base
+from app.db.models import User
 from app.main import create_app
 from tests.fake_ai import FakeAIProvider
+
+TEST_USER_ID = 1
 
 
 @pytest.fixture
@@ -25,6 +33,9 @@ def sqlite_session() -> Iterator[Session]:
     )
     Base.metadata.create_all(engine)
     session = sessionmaker(bind=engine, expire_on_commit=False)()
+    # The learner the `client` fixture acts as (see TEST_USER_ID).
+    session.add(User(id=TEST_USER_ID, username="learner", password_hash=""))
+    session.commit()
     try:
         yield session
     finally:
@@ -66,5 +77,7 @@ def client(
     app.dependency_overrides[get_settings] = lambda: settings
     app.dependency_overrides[get_ai_provider] = lambda: fake_ai
     app.dependency_overrides[get_ai_provider_factory] = lambda: lambda: fake_ai
+    # Logged in as TEST_USER_ID; tests/test_auth_api.py covers the real cookie login.
+    app.dependency_overrides[get_current_user_id] = lambda: TEST_USER_ID
     with TestClient(app) as test_client:
         yield test_client

@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.dependencies import get_db
+from app.api.dependencies import get_current_user_id, get_db
 from app.core.config import Settings, get_settings
 from app.db.models import Chapter, Document, VocabularyItem
 from app.domain.enums import DocumentStatus, VocabularyItemType
@@ -230,6 +230,7 @@ def test_analyze_without_api_key_is_unavailable(
     app = create_app()
     app.dependency_overrides[get_db] = lambda: sqlite_session
     app.dependency_overrides[get_settings] = lambda: settings  # gemini_api_key=None
+    app.dependency_overrides[get_current_user_id] = lambda: 1
     with TestClient(app) as client:
         document_id = upload(client)
         response = analyze(client, document_id)

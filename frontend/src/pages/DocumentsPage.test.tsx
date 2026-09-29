@@ -62,7 +62,7 @@ describe('DocumentsPage', () => {
     renderRoute()
 
     const file = pdf()
-    await userEvent.upload(screen.getByLabelText('PDF dosyası'), file)
+    await userEvent.upload(await screen.findByLabelText('PDF dosyası'), file)
     await userEvent.click(screen.getByRole('button', { name: 'Yükle' }))
 
     expect(await screen.findByText(/Yüklendi. Şimdi analiz edebilirsin/)).toBeInTheDocument()
@@ -79,7 +79,9 @@ describe('DocumentsPage', () => {
     renderRoute()
 
     const notes = new File(['hello'], 'notes.txt', { type: 'text/plain' })
-    await userEvent.upload(screen.getByLabelText('PDF dosyası'), notes, { applyAccept: false })
+    await userEvent.upload(await screen.findByLabelText('PDF dosyası'), notes, {
+      applyAccept: false,
+    })
 
     expect(screen.getByRole('alert')).toHaveTextContent('Yalnızca PDF dosyaları yüklenebilir.')
     expect(screen.getByRole('button', { name: 'Yükle' })).toBeDisabled()
@@ -93,7 +95,7 @@ describe('DocumentsPage', () => {
     })
     renderRoute()
 
-    await userEvent.upload(screen.getByLabelText('PDF dosyası'), pdf())
+    await userEvent.upload(await screen.findByLabelText('PDF dosyası'), pdf())
     await userEvent.click(screen.getByRole('button', { name: 'Yükle' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent('okunabilir bir PDF değil')

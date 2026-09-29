@@ -15,16 +15,16 @@ class ChapterService:
         self.documents = DocumentRepository(session)
         self.chapters = ChapterRepository(session)
 
-    def list_for_document(self, document_id: int) -> list[tuple[Chapter, int]]:
+    def list_for_document(self, document_id: int, *, user_id: int) -> list[tuple[Chapter, int]]:
         """Chapters with their vocabulary counts; empty until the document is analyzed."""
-        if self.documents.get(document_id) is None:
+        if self.documents.get(document_id, user_id=user_id) is None:
             raise NotFoundError(
                 f"Document {document_id} was not found.", details={"document_id": document_id}
             )
         return self.chapters.list_with_vocabulary_counts(document_id)
 
-    def list_vocabulary(self, chapter_id: int) -> Sequence[VocabularyItem]:
-        if self.chapters.get(chapter_id) is None:
+    def list_vocabulary(self, chapter_id: int, *, user_id: int) -> Sequence[VocabularyItem]:
+        if self.chapters.get(chapter_id, user_id=user_id) is None:
             raise NotFoundError(
                 f"Chapter {chapter_id} was not found.", details={"chapter_id": chapter_id}
             )

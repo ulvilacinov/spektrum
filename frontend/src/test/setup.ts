@@ -1,6 +1,8 @@
 import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
-import { afterEach, vi } from 'vitest'
+import { afterEach, beforeEach, vi } from 'vitest'
+
+import { mockApi } from './utils'
 
 // jsdom has <dialog> but not its modal API; enough of it for the components under test.
 if (!HTMLDialogElement.prototype.showModal) {
@@ -12,6 +14,11 @@ if (!HTMLDialogElement.prototype.showModal) {
     this.dispatchEvent(new Event('close'))
   }
 }
+
+// Every test starts logged in with no other API; tests add routes with mockApi.
+beforeEach(() => {
+  mockApi({})
+})
 
 afterEach(() => {
   cleanup()

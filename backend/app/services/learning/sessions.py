@@ -58,7 +58,7 @@ class LearningSessionService:
         NEW: the chapter's next unstudied words, only once the policy unlocks the next batch.
         REVIEW: studied but not yet mastered words, weak ones first.
         """
-        if self.chapters.get(chapter_id) is None:
+        if self.chapters.get(chapter_id, user_id=user_id) is None:
             raise NotFoundError(
                 f"Chapter {chapter_id} was not found.", details={"chapter_id": chapter_id}
             )

@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
-from app.db.models import Chapter, VocabularyItem
+from app.db.models import Chapter, Document, VocabularyItem
 
 
 class ChapterRepository:
@@ -29,8 +29,12 @@ class ChapterRepository:
         self.session.add_all(chapters)
         self.session.flush()
 
-    def get(self, chapter_id: int) -> Chapter | None:
-        return self.session.get(Chapter, chapter_id)
+    def get(self, chapter_id: int, *, user_id: int | None = None) -> Chapter | None:
+        """The chapter; with ``user_id`` only if that user owns its document."""
+        chapter = self.session.get(Chapter, chapter_id)
+        if chapter is None or (user_id is not None and chapter.document.user_id != user_id):
+            return None
+        return chapter
 
     def list_with_vocabulary_counts(self, document_id: int) -> list[tuple[Chapter, int]]:
         """A document's chapters in reading order, each with its number of vocabulary items."""
@@ -52,8 +56,14 @@ class ChapterRepository:
         )
         return self.session.scalars(statement).all()
 
-    def list_chapters(self, *, document_id: int | None = None) -> Sequence[Chapter]:
-        statement = select(Chapter).order_by(Chapter.document_id, Chapter.order)
+    def list_chapters(self, *, user_id: int, document_id: int | None = None) -> Sequence[Chapter]:
+        """The user's chapters (of one document or all), in reading order."""
+        statement = (
+            select(Chapter)
+            .join(Document, Document.id == Chapter.document_id)
+            .where(Document.user_id == user_id)
+            .order_by(Chapter.document_id, Chapter.order)
+        )
         if document_id is not None:
             statement = statement.where(Chapter.document_id == document_id)
         return self.session.scalars(statement).all()

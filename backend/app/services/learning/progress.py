@@ -50,8 +50,8 @@ class ProgressService:
     def chapter_progress(
         self, *, user_id: int, document_id: int | None = None
     ) -> list[ChapterProgress]:
-        self._require_document(document_id)
-        chapters = self.chapters.list_chapters(document_id=document_id)
+        self._require_document(document_id, user_id)
+        chapters = self.chapters.list_chapters(user_id=user_id, document_id=document_id)
         counts = self.learning.status_counts(
             user_id=user_id, chapter_ids=(chapter.id for chapter in chapters)
         )
@@ -73,8 +73,8 @@ class ProgressService:
         limit: int = 50,
     ) -> list[WeakWord]:
         """Weak words, longest due first, each with the learner's latest mistake."""
-        self._require_document(document_id)
-        if chapter_id is not None and self.chapters.get(chapter_id) is None:
+        self._require_document(document_id, user_id)
+        if chapter_id is not None and self.chapters.get(chapter_id, user_id=user_id) is None:
             raise NotFoundError(
                 f"Chapter {chapter_id} was not found.", details={"chapter_id": chapter_id}
             )
@@ -89,8 +89,8 @@ class ProgressService:
             for item, progress in rows
         ]
 
-    def _require_document(self, document_id: int | None) -> None:
-        if document_id is not None and self.documents.get(document_id) is None:
+    def _require_document(self, document_id: int | None, user_id: int) -> None:
+        if document_id is not None and self.documents.get(document_id, user_id=user_id) is None:
             raise NotFoundError(
                 f"Document {document_id} was not found.", details={"document_id": document_id}
             )

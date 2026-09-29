@@ -134,9 +134,9 @@ describe('DocumentPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('bulunamadı')
   })
 
-  it('shows the not-found page for a malformed id', () => {
+  it('shows the not-found page for a malformed id', async () => {
     renderRoute('/documents/abc')
 
-    expect(screen.getByRole('heading', { name: 'Sayfa bulunamadı' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Sayfa bulunamadı' })).toBeInTheDocument()
   })
 })

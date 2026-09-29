@@ -69,6 +69,8 @@ Push-Location $backend
 try {
   Invoke-Step 'PostgreSQL başlatılıyor' { docker compose up -d --wait postgres }
   Invoke-Step 'Veritabanı güncelleniyor' { & (Join-Path $venv 'alembic.exe') upgrade head }
+  # Not fatal: only prints how to create an account or set a missing password.
+  & (Join-Path $venv 'python.exe') -m app.cli check
 } finally { Pop-Location }
 
 if (-not $SkipBuild) {

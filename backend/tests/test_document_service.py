@@ -23,7 +23,7 @@ def service(sqlite_session: Session, upload_dir: Path) -> DocumentService:
 
 def upload(service: DocumentService, data: bytes):
     return service.upload(
-        file=io.BytesIO(data), filename="vocab.pdf", content_type="application/pdf"
+        file=io.BytesIO(data), filename="vocab.pdf", content_type="application/pdf", user_id=1
     )
 
 

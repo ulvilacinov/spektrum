@@ -14,7 +14,7 @@ from app.db.models import (
 from app.domain.enums import DocumentStatus, VocabularyItemType, VocabularyStatus
 from app.services.learning import new_progress
 
-USER_ID = 1  # the test settings' default_user_id
+USER_ID = 1  # conftest.TEST_USER_ID
 
 
 @pytest.fixture
@@ -35,6 +35,7 @@ def chapter_id(sqlite_session: Session) -> int:
         for n in range(1, 13)
     ]
     document = Document(
+        user_id=1,
         file_name="a.pdf",
         original_file_name="B1.pdf",
         storage_path="a.pdf",
@@ -188,13 +189,14 @@ def test_unknown_session_is_404(client: TestClient) -> None:
     assert response.json()["error"]["details"] == {"learning_session_id": 999}
 
 
-def test_sessions_and_progress_are_per_user(client: TestClient, chapter_id: int) -> None:
+def test_other_users_see_neither_the_sessions_nor_the_chapter(
+    client: TestClient, chapter_id: int
+) -> None:
     session_id = start(client, chapter_id).json()["id"]
     client.app.dependency_overrides[get_current_user_id] = lambda: 2
 
     assert client.get(f"/api/learning-sessions/{session_id}/items").status_code == 404
-    other = start(client, chapter_id).json()
-    assert item_words(client, other["id"])[0] == "Wort1"  # user 2 starts from the beginning
+    assert start(client, chapter_id).status_code == 404  # the document belongs to user 1
 
 
 def test_get_session_says_where_it_belongs(

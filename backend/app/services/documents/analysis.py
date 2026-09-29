@@ -64,8 +64,8 @@ class DocumentAnalysisService:
         self.max_pages_per_request = max_pages_per_request
         self.max_concurrency = max_concurrency
 
-    def analyze(self, document_id: int, *, force: bool = False) -> AnalysisReport:
-        document = self.documents.get_document(document_id)
+    def analyze(self, document_id: int, *, user_id: int, force: bool = False) -> AnalysisReport:
+        document = self.documents.get_document(document_id, user_id=user_id)
         self._start_parsing(document, force=force)
         try:
             chapters, rejected_count = self._build_chapters(document_id)

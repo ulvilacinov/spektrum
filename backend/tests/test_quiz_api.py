@@ -22,6 +22,7 @@ def learning_session_id(client: TestClient, sqlite_session: Session) -> int:
     ]
     sqlite_session.add(
         Document(
+            user_id=1,
             file_name="a.pdf",
             original_file_name="B1.pdf",
             storage_path="a.pdf",

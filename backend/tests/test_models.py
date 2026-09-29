@@ -7,6 +7,7 @@ from app.domain.enums import DocumentStatus, VocabularyItemType
 
 def test_document_chapter_vocabulary_roundtrip(sqlite_session: Session) -> None:
     document = Document(
+        user_id=1,
         file_name="abc123.pdf",
         original_file_name="Wortschatz B1.pdf",
         storage_path="uploads/abc123.pdf",

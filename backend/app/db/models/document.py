@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Integer, String, Text, func
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, enum_column
@@ -17,8 +17,10 @@ class Document(Base):
     __tablename__ = "documents"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    # No users table in the MVP yet; becomes a foreign key once authentication exists.
-    user_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    # The owner; other users never see the document.
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
 
     file_name: Mapped[str] = mapped_column(String(255), nullable=False)
     original_file_name: Mapped[str] = mapped_column(String(255), nullable=False)

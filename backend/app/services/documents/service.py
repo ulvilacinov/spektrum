@@ -49,7 +49,7 @@ class DocumentService:
         file: BinaryIO,
         filename: str | None,
         content_type: str | None,
-        user_id: int | None = None,
+        user_id: int,
     ) -> Document:
         """Validate an uploaded PDF, store it on disk and register it as a Document."""
         original_file_name = self._validate_file_name(filename)
@@ -77,11 +77,12 @@ class DocumentService:
         self.session.refresh(document)  # load server-generated uploaded_at
         return document
 
-    def list_documents(self, *, limit: int, offset: int) -> Sequence[Document]:
-        return self.documents.list(limit=limit, offset=offset)
+    def list_documents(self, *, user_id: int, limit: int, offset: int) -> Sequence[Document]:
+        return self.documents.list(user_id=user_id, limit=limit, offset=offset)
 
-    def get_document(self, document_id: int) -> Document:
-        document = self.documents.get(document_id)
+    def get_document(self, document_id: int, *, user_id: int | None = None) -> Document:
+        """The document; with ``user_id`` a document of another user is "not found"."""
+        document = self.documents.get(document_id, user_id=user_id)
         if document is None:
             raise NotFoundError(
                 f"Document {document_id} was not found.", details={"document_id": document_id}

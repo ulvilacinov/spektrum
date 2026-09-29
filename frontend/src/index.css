@@ -988,13 +988,75 @@ select:focus-visible {
 
 /* Grammar reference */
 
+.header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.6rem;
+  margin-left: auto;
+}
+
 .header__help {
   --button-bg: var(--yellow);
   --button-edge: var(--yellow-dark);
   --button-text: #3b2a00;
 
-  margin-left: auto;
   flex-shrink: 0;
+}
+
+.header__user {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 800;
+}
+
+.header__logout {
+  --button-bg: rgb(255 255 255 / 0.2);
+  --button-edge: rgb(0 0 0 / 0.15);
+  --button-text: #ffffff;
+
+  padding: 0.45rem 0.8rem;
+  font-size: 0.9rem;
+}
+
+/* Login */
+
+.login {
+  max-width: 420px;
+  margin: 2rem auto 0;
+  align-items: stretch;
+  text-align: center;
+}
+
+.login .empty__emoji {
+  align-self: center;
+}
+
+.login__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-weight: 800;
+  text-align: left;
+}
+
+input[type='password'] {
+  font: inherit;
+  font-size: 1.1rem;
+  font-weight: 700;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 3px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-soft);
+  color: var(--text);
+}
+
+input[type='password']:focus {
+  border-color: var(--accent);
+  outline: none;
 }
 
 .grammar {
@@ -1197,6 +1259,10 @@ select:focus-visible {
   }
 
   .header__tagline {
+    display: none;
+  }
+
+  .header__username {
     display: none;
   }
 }

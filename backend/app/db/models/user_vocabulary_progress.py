@@ -16,9 +16,8 @@ class UserVocabularyProgress(Base):
     __table_args__ = (UniqueConstraint("user_id", "vocabulary_item_id"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    # No users table in the MVP yet; becomes a foreign key once authentication exists.
     # Indexed by the (user_id, vocabulary_item_id) unique constraint.
-    user_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     vocabulary_item_id: Mapped[int] = mapped_column(
         ForeignKey("vocabulary_items.id", ondelete="CASCADE"), nullable=False, index=True
     )

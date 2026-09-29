@@ -10,7 +10,7 @@ class DocumentRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    user_id: int | None
+    user_id: int
     original_file_name: str
     file_name: str
     status: DocumentStatus

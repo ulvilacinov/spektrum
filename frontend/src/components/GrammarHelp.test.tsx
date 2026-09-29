@@ -4,10 +4,10 @@ import { describe, expect, it } from 'vitest'
 
 import { json, mockApi, renderRoute } from '../test/utils'
 
-function openGrammar() {
+async function openGrammar() {
   mockApi({ 'GET /api/documents': () => json([]) })
   renderRoute('/')
-  return userEvent.click(screen.getByRole('button', { name: /Dilbilgisi/ }))
+  return userEvent.click(await screen.findByRole('button', { name: /Dilbilgisi/ }))
 }
 
 describe('GrammarHelp', () => {

@@ -58,14 +58,20 @@ Alembic, PostgreSQL 16, PyMuPDF, Gemini (behind a provider abstraction), pytest,
   last `MAX_HISTORY_MESSAGES` go to `AIProvider.chat()`; the prompt is `prompts.CHAT_SYSTEM`).
 - Services that need the AI only sometimes get `get_ai_provider_factory()` (lazy), so
   deterministic paths work without an AI configuration.
-- The acting user comes from `get_current_user_id()` (`DEFAULT_USER_ID` until auth exists).
+- The acting user comes from `get_current_user_id()` → `get_current_user()` (HttpOnly session
+  cookie → `AuthService.authenticate`). Every router except health/auth requires it
+  (`app/api/router.py`). Documents are private: repositories filter by `user_id`, and a
+  foreign document/chapter is a 404. Accounts: `python -m app.cli` (no public sign-up).
+- `app/services/auth/` — `AuthService` (scrypt passwords in `app/core/security.py`, sessions
+  stored as SHA-256 token hashes, 30 days sliding), `LoginThrottle` (in-memory, per username
+  and client).
 - Services are wired in `app/api/dependencies.py` (e.g. `DocumentServiceDep`).
 
 ## Conventions
 
 - Enums are `StrEnum` in `app/domain/enums.py`, stored as VARCHAR via `enum_column()`,
   not native PostgreSQL ENUMs.
-- Integer primary keys. `user_id` is a nullable int without FK until users exist.
+- Integer primary keys. `user_id` columns are FKs to `users.id` (ON DELETE CASCADE).
 - Every new model is imported in `app/db/models/__init__.py`.
 - Schema changes go through Alembic: `alembic revision --autogenerate -m "..."`, then review
   the generated file by hand. `alembic check` must report no drift.
@@ -75,7 +81,10 @@ Alembic, PostgreSQL 16, PyMuPDF, Gemini (behind a provider abstraction), pytest,
 - AI output for document parsing is always structured JSON validated by Pydantic.
   Vocabulary items must originate from the PDF; the AI may add examples/translations only.
   This is enforced deterministically by `vocabulary_grounding`, not only by the prompt.
-- Tests never call a real AI: `tests/fake_ai.py` overrides `get_ai_provider`.
+- Tests never call a real AI: `tests/fake_ai.py` overrides `get_ai_provider`. The `client`
+  fixture is logged in as `TEST_USER_ID` (override of `get_current_user_id`);
+  `tests/test_auth_api.py` uses the real cookie flow. Frontend tests are logged in by default
+  (`mockApi` answers `/api/auth/me` with `TEST_USER`).
 - Answer checking: exact match → normalized deterministic comparison → AI only when needed.
 - Progression logic (new/learning/weak/mastered) lives in one isolated service.
 - Tests use in-memory SQLite (`tests/conftest.py`) for speed; migrations are verified
@@ -196,6 +205,18 @@ geht") are not rejected.
       button → non-modal side panel on every page (full screen on phones), suggestions, Enter
       sends, retry after AI errors, "Yeni sohbet", conversation kept in localStorage (last 50),
       tiny Markdown renderer (**bold**, "- " bullets). Verified with real Gemini (~5 s).
+- [x] AUTH — `User`, `AuthSession` (migration 0006: existing data → user `admin`, id 1, no
+      password; FKs on documents/learning_sessions/user_vocabulary_progress, documents.user_id
+      NOT NULL). `POST /api/auth/login` (HttpOnly SameSite=Lax cookie, `SESSION_COOKIE_SECURE`
+      for HTTPS), `POST /api/auth/logout`, `GET /api/auth/me`; 401 `not_authenticated` /
+      `invalid_credentials`, 429 `too_many_login_attempts` (5 per username / 20 per client in
+      15 min). CLI: create-user, set-password (ends sessions), rename-user, list-users, check.
+      Frontend: login page instead of the app while logged out, user + "Çıkış" in the header,
+      any 401 returns to the login page, logout clears cached data and the chat history.
+      Migration verified on a copy of the real database (upgrade/downgrade/upgrade, no drift).
+- [ ] DEPLOY — AWS: one EC2 + Docker Compose (Postgres, app, Caddy with an sslip.io name and
+      Let's Encrypt), GitHub Actions deploy on push to main, daily DB backups to S3, move the
+      local data over.
 - [x] Self-hosting — `start.ps1` (one command), backend serves `frontend/dist` when
       `FRONTEND_DIST_DIR` is set, Postgres published on 127.0.0.1 only with
       `restart: unless-stopped`, `DATABASE_URL` → 127.0.0.1, root README with Tailscale access

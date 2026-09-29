@@ -2,9 +2,8 @@ import { Fragment, useEffect, useRef, useState, type FormEvent, type KeyboardEve
 
 import { useAskTutor, type ChatMessage } from '../api/chat'
 import { errorMessage } from '../api/client'
+import { loadChatHistory, storeChatHistory } from '../lib/chatStorage'
 
-const STORAGE_KEY = 'spektrum.chat'
-const MAX_STORED = 50
 // The backend only looks at the recent history anyway.
 const MAX_SENT = 20
 const MAX_QUESTION_LENGTH = 2000
@@ -15,23 +14,6 @@ const SUGGESTIONS = [
   'Perfekt’te ne zaman sein kullanılır?',
   '„weil“ ile bir cümle kurar mısın?',
 ]
-
-function loadMessages(): ChatMessage[] {
-  try {
-    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]')
-    return Array.isArray(stored) ? stored : []
-  } catch {
-    return []
-  }
-}
-
-function storeMessages(messages: ChatMessage[]) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-MAX_STORED)))
-  } catch {
-    // Storage unavailable (private mode, quota): the chat still works for this visit.
-  }
-}
 
 /** **bold** inside a line. */
 function Inline({ text }: { text: string }) {
@@ -93,14 +75,14 @@ function Formatted({ text }: { text: string }) {
 /** A floating button and side panel for quick questions to the AI tutor, on every page. */
 export function ChatPanel() {
   const [open, setOpen] = useState(false)
-  const [messages, setMessages] = useState<ChatMessage[]>(loadMessages)
+  const [messages, setMessages] = useState<ChatMessage[]>(loadChatHistory)
   const [draft, setDraft] = useState('')
   const ask = useAskTutor()
   const log = useRef<HTMLDivElement>(null)
   // Replies that arrive after "Yeni sohbet" belong to the old conversation.
   const conversation = useRef(0)
 
-  useEffect(() => storeMessages(messages), [messages])
+  useEffect(() => storeChatHistory(messages), [messages])
 
   useEffect(() => {
     log.current?.scrollTo?.({ top: log.current.scrollHeight })

@@ -30,8 +30,10 @@ class Settings(BaseSettings):
     frontend_dist_dir: Path | None = None
     max_upload_size_mb: int = Field(default=20, gt=0)
 
-    # Until authentication exists every request acts as this user.
-    default_user_id: int = Field(default=1, gt=0)
+    # Login sessions (cookie). Secure cookies need HTTPS; enable them in production.
+    session_cookie_name: str = "spektrum_session"
+    session_cookie_secure: bool = False
+    session_days: int = Field(default=30, gt=0)
 
     ai_provider: Literal["gemini"] = "gemini"
     # Pages sent to the AI in one vocabulary-extraction request; long chapters are split.

@@ -19,7 +19,7 @@ function chatBackend(reply: Reply = () => json({ reply: 'Cevap' })) {
 
 async function openChat() {
   renderRoute('/')
-  await userEvent.click(screen.getByRole('button', { name: /Sor/ }))
+  await userEvent.click(await screen.findByRole('button', { name: /Sor/ }))
   return screen.getByRole('complementary', { name: 'Yapay zekâya sor' })
 }
 

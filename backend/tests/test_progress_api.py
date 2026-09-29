@@ -28,6 +28,7 @@ def ids(sqlite_session: Session) -> dict[str, int]:
         title="Kapitel 2", chapter_number=2, order=2, source_start_page=2, source_end_page=2
     )
     document = Document(
+        user_id=1,
         file_name="a.pdf",
         original_file_name="B1.pdf",
         storage_path="a.pdf",
@@ -154,11 +155,15 @@ def test_progress_without_document_filter_covers_all_documents(
     assert [c["chapter_id"] for c in body["chapters"]] == [ids["chapter"], ids["empty"]]
 
 
-def test_progress_is_per_user(client: TestClient, ids: dict[str, int]) -> None:
+def test_progress_of_another_users_document_is_not_found(
+    client: TestClient, ids: dict[str, int]
+) -> None:
     start(client, ids["chapter"], batch_size=3)
     client.app.dependency_overrides[get_current_user_id] = lambda: 2
 
-    assert statuses(progress(client, ids["document"])["chapters"][0]) == (4, 0, 0, 0)
+    assert client.get("/api/progress", params={"document_id": ids["document"]}).status_code == 404
+    assert client.get("/api/progress").json()["chapters"] == []
+    assert client.get("/api/review/weak").json() == []
 
 
 def test_review_needs_studied_words(client: TestClient, ids: dict[str, int]) -> None:

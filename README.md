@@ -28,10 +28,24 @@ Durdurmak için `Ctrl+C`.
   `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`
 - Geliştirme sunucusu (`uvicorn --reload`) 8000'de çalışıyorsa önce onu kapat.
 
+### Hesaplar (giriş)
+
+Uygulama kullanıcı adı ve şifre ister. Kayıt sayfası yok; hesaplar komut satırından
+yönetilir (`backend/` klasöründe):
+
+```powershell
+.venv\Scripts\python.exe -m app.cli set-password admin   # hesaplardan önceki verinin sahibi
+.venv\Scripts\python.exe -m app.cli create-user anna      # yeni hesap
+.venv\Scripts\python.exe -m app.cli list-users
+```
+
+`start.ps1` şifresi olmayan bir hesap görürse hangi komutu çalıştıracağını yazar.
+5 hatalı denemeden sonra giriş 15 dakika bekletilir.
+
 ### Telefondan / başka cihazdan erişim (Tailscale)
 
-Uygulamada henüz giriş (login) yok. Bu yüzden internete açma; yalnızca kendi cihazlarının
-bağlandığı özel bir ağ üzerinden eriş.
+Uygulama şifreyle korunuyor, ama bu bilgisayardaki sunucu HTTP (şifresiz bağlantı) kullanıyor.
+Bu yüzden internete açma; yalnızca kendi cihazlarının bağlandığı özel bir ağ üzerinden eriş.
 
 1. [Tailscale](https://tailscale.com/download)'i bu bilgisayara ve telefonuna kur, ikisinde de
    aynı hesapla giriş yap.

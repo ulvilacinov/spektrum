@@ -18,12 +18,17 @@ class DocumentRepository:
         self.session.flush()
         return document
 
-    def get(self, document_id: int) -> Document | None:
-        return self.session.get(Document, document_id)
+    def get(self, document_id: int, *, user_id: int | None = None) -> Document | None:
+        """The document; with ``user_id`` only if that user owns it."""
+        document = self.session.get(Document, document_id)
+        if document is None or (user_id is not None and document.user_id != user_id):
+            return None
+        return document
 
-    def list(self, *, limit: int, offset: int) -> Sequence[Document]:
+    def list(self, *, user_id: int, limit: int, offset: int) -> Sequence[Document]:
         statement = (
             select(Document)
+            .where(Document.user_id == user_id)
             .order_by(Document.uploaded_at.desc(), Document.id.desc())
             .limit(limit)
             .offset(offset)

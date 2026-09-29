@@ -47,6 +47,30 @@ uvicorn app.main:app --reload
 - Swagger UI: http://localhost:8000/docs
 - Health: http://localhost:8000/api/health
 
+## Accounts
+
+Every endpoint except `/api/health` and `/api/auth/login` needs a login. There is no public
+sign-up; accounts are managed from the command line:
+
+```bash
+python -m app.cli create-user anna        # asks for the password (min. 8 characters)
+python -m app.cli set-password anna       # also logs the user out everywhere
+python -m app.cli rename-user anna anna.k
+python -m app.cli list-users
+```
+
+Data from before accounts existed belongs to the user `admin` created by migration 0006; it
+has no password until you run `python -m app.cli set-password admin`.
+
+| Method | Path | |
+|---|---|---|
+| POST | `/api/auth/login` | {username, password} → sets the HttpOnly session cookie (30 days, extended while used). 401 `invalid_credentials`; 429 `too_many_login_attempts` after 5 failures per username (or 20 per client) in 15 minutes. |
+| POST | `/api/auth/logout` | Ends the session and clears the cookie (204). |
+| GET | `/api/auth/me` | The logged-in user, or 401 `not_authenticated`. |
+
+Passwords are hashed with scrypt; only a SHA-256 hash of the session token is stored.
+Set `SESSION_COOKIE_SECURE=true` when the app is served over HTTPS.
+
 ## Documents API
 
 | Method | Path | Description |
@@ -103,8 +127,8 @@ Status codes: 409 already parsed / in progress, 422 PDF without text layer,
 Starting a session marks its words as studied (`new` → `learning`). When every word of the
 chapter has been studied the API answers 409 `no_new_vocabulary`. Status changes are made only
 by `ProgressionPolicy` (`app/services/learning/progression.py`): a wrong answer makes a word
-`weak`, two correct answers in a row make it `mastered`. Until authentication exists, every
-request acts as `DEFAULT_USER_ID`.
+`weak`, two correct answers in a row make it `mastered`. Every request acts as the logged-in
+user (see Accounts); documents, sessions and progress belong to that user.
 
 Quizzes are built without AI from the stored vocabulary data: one question per word, its
 type chosen (weighted, reproducibly per session) from translation in both directions,

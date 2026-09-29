@@ -28,7 +28,9 @@ class LearningSession(Base):
     __table_args__ = (CheckConstraint("batch_size > 0", name="batch_size_positive"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     chapter_id: Mapped[int] = mapped_column(
         ForeignKey("chapters.id", ondelete="CASCADE"), nullable=False, index=True
     )

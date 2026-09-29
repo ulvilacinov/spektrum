@@ -34,6 +34,16 @@ class ConflictError(AppError):
     code = "conflict"
 
 
+class NotAuthenticatedError(AppError):
+    status_code = status.HTTP_401_UNAUTHORIZED
+    code = "not_authenticated"
+
+
+class TooManyRequestsError(AppError):
+    status_code = status.HTTP_429_TOO_MANY_REQUESTS
+    code = "too_many_requests"
+
+
 class UnprocessableError(AppError):
     status_code = status.HTTP_422_UNPROCESSABLE_CONTENT
     code = "unprocessable"

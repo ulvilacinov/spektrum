@@ -1,12 +1,15 @@
 from collections.abc import Callable, Iterator
+from datetime import timedelta
 from typing import Annotated
 
-from fastapi import Depends
+from fastapi import Depends, Request
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings, get_settings
+from app.db.models import User
 from app.db.session import SessionLocal
 from app.services.ai import AIProvider, create_ai_provider
+from app.services.auth import AuthService, LoginThrottle
 from app.services.chat import ChatService
 from app.services.documents import (
     ChapterService,
@@ -89,9 +92,34 @@ DocumentAnalysisServiceDep = Annotated[
 ]
 
 
-def get_current_user_id(settings: AppSettings) -> int:
-    """The acting user. The single seam to replace once authentication exists."""
-    return settings.default_user_id
+# One throttle for the whole process (failed logins must be counted across requests).
+_login_throttle = LoginThrottle()
+
+
+def get_auth_service(db: DbSession, settings: AppSettings) -> AuthService:
+    return AuthService(
+        db, session_lifetime=timedelta(days=settings.session_days), throttle=_login_throttle
+    )
+
+
+AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
+
+
+def session_token(request: Request, settings: Settings) -> str | None:
+    return request.cookies.get(settings.session_cookie_name)
+
+
+def get_current_user(request: Request, settings: AppSettings, auth: AuthServiceDep) -> User:
+    """The logged-in user (401 ``not_authenticated`` without a valid session cookie)."""
+    return auth.authenticate(session_token(request, settings))
+
+
+CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+def get_current_user_id(user: CurrentUser) -> int:
+    """The acting user's id; every data access is scoped to it."""
+    return user.id
 
 
 CurrentUserId = Annotated[int, Depends(get_current_user_id)]
