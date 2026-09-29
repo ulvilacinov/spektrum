@@ -113,7 +113,7 @@ docker exec vocab-postgres pg_restore -U vocab -d vocab --clean --if-exists /tmp
   `FLY_API_TOKEN` (yalnızca bu uygulamaya deploy yetkisi, 1 yıl geçerli), değişken:
   `FLY_DEPLOY=true`.
 
-Sık kullanılan komutlar (`flyctl` = `%USERPROFILE%\.fly\bin\flyctl.exe`):lyctl.exe`):
+Sık kullanılan komutlar (`flyctl` = `%USERPROFILE%\.fly\bin\flyctl.exe`):
 
 ```powershell
 flyctl logs --app spektrum-kelime                         # canlı loglar
