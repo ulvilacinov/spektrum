@@ -54,6 +54,8 @@ Alembic, PostgreSQL 16, PyMuPDF, Gemini (behind a provider abstraction), pytest,
   `quiz.py`: `QuizService`; `answer_matching.py`: deterministic exact/normalized matching
   with "/" alternatives and optional "( )" parts; `answers.py`: `AnswerService`;
   `progress.py`: `ProgressService` (read-only progress and weak-word views).
+- `app/services/chat/` — `ChatService`: stateless tutor chat (client sends the history, the
+  last `MAX_HISTORY_MESSAGES` go to `AIProvider.chat()`; the prompt is `prompts.CHAT_SYSTEM`).
 - Services that need the AI only sometimes get `get_ai_provider_factory()` (lazy), so
   deterministic paths work without an AI configuration.
 - The acting user comes from `get_current_user_id()` (`DEFAULT_USER_ID` until auth exists).
@@ -188,6 +190,12 @@ geht") are not rejected.
       dative verbs, der/ein/kein tables, the three adjective ending tables ("ein neues Haus"),
       personal pronouns, prepositions by case with contractions. Remembers the last topic while
       the app is open. Tests stub `showModal`/`close` in `src/test/setup.ts` (jsdom lacks them).
+- [x] F7 — AI tutor chat: `POST /api/chat` {messages: [{role user|assistant, content}]} →
+      {reply} (no DB; 422 `invalid_chat` unless the last message is the learner's, 502/503 as
+      elsewhere), `AIProvider.chat()` + Gemini multi-turn contents. Frontend: "💬 Sor" floating
+      button → non-modal side panel on every page (full screen on phones), suggestions, Enter
+      sends, retry after AI errors, "Yeni sohbet", conversation kept in localStorage (last 50),
+      tiny Markdown renderer (**bold**, "- " bullets). Verified with real Gemini (~5 s).
 - [x] Self-hosting — `start.ps1` (one command), backend serves `frontend/dist` when
       `FRONTEND_DIST_DIR` is set, Postgres published on 127.0.0.1 only with
       `restart: unless-stopped`, `DATABASE_URL` → 127.0.0.1, root README with Tailscale access

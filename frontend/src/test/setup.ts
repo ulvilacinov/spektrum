@@ -15,5 +15,6 @@ if (!HTMLDialogElement.prototype.showModal) {
 
 afterEach(() => {
   cleanup()
+  localStorage.clear()
   vi.restoreAllMocks()
 })

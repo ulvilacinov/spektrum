@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+from app.domain.enums import ChatRole
+
 
 @dataclass(frozen=True, slots=True)
 class ExtractedPage:
@@ -20,3 +22,11 @@ class ExtractedDocument:
     @property
     def page_count(self) -> int:
         return len(self.pages)
+
+
+@dataclass(frozen=True, slots=True)
+class ChatMessage:
+    """One message of a conversation with the AI tutor."""
+
+    role: ChatRole
+    content: str

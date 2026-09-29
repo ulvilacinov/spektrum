@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 
-from app.domain.entities import ExtractedPage
+from app.domain.entities import ChatMessage, ExtractedPage
 from app.services.ai.schemas import (
     AnswerEvaluationRequest,
     AnswerEvaluationResult,
@@ -33,3 +33,10 @@ class AIProvider(ABC):
     @abstractmethod
     def evaluate_answer(self, request: AnswerEvaluationRequest) -> AnswerEvaluationResult:
         """Grade a free-form quiz answer and explain mistakes in Turkish."""
+
+    @abstractmethod
+    def chat(self, messages: Sequence[ChatMessage]) -> str:
+        """Answer the learner's latest message of a tutoring conversation, in Turkish.
+
+        ``messages`` is the recent history, oldest first; the last one is the learner's.
+        """

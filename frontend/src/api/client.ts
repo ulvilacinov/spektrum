@@ -36,6 +36,7 @@ const MESSAGES: Record<string, string> = {
   ai_provider_error: 'Yapay zekâ servisine ulaşılamadı. Lütfen biraz sonra tekrar deneyin.',
   ai_invalid_response: 'Yapay zekâ geçerli bir yanıt vermedi. Lütfen tekrar deneyin.',
   ai_not_configured: 'Yapay zekâ servisi yapılandırılmamış (GEMINI_API_KEY eksik).',
+  invalid_chat: 'Mesaj gönderilemedi. Yeni bir sohbet başlatmayı dene.',
   no_new_vocabulary: 'Bu bölümdeki bütün kelimeler çalışıldı.',
   batch_locked: 'Yeni kelimelere geçmeden önce öğrendiğin kelimeleri tekrar et.',
   nothing_to_review: 'Bu bölümde tekrar edilecek kelime yok.',

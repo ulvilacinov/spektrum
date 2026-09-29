@@ -1,5 +1,6 @@
 import { Link, Outlet } from 'react-router'
 
+import { ChatPanel } from './ChatPanel'
 import { GrammarHelp } from './GrammarHelp'
 
 export function Layout() {
@@ -24,6 +25,7 @@ export function Layout() {
       <main className="main">
         <Outlet />
       </main>
+      <ChatPanel />
     </>
   )
 }

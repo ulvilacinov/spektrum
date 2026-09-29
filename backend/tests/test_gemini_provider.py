@@ -6,12 +6,14 @@ import pytest
 from google.genai import errors, types
 
 from app.core.config import Settings
-from app.domain.entities import ExtractedPage
+from app.domain.entities import ChatMessage, ExtractedPage
+from app.domain.enums import ChatRole
 from app.services.ai import (
     AINotConfiguredError,
     AIProviderError,
     AIResponseError,
     create_ai_provider,
+    prompts,
 )
 from app.services.ai.gemini import GeminiAIProvider
 from app.services.ai.schemas import (
@@ -286,3 +288,29 @@ def test_evaluation_output_is_sanitized() -> None:
 
     assert result.score == 1.0  # clamped to 0…1
     assert result.error_type is None  # unknown error types are dropped
+
+
+def test_chat_sends_the_conversation_with_roles_and_the_tutor_prompt() -> None:
+    gemini, models = provider(response("  **der Tisch**: masa  "))
+
+    reply = gemini.chat(
+        [
+            ChatMessage(ChatRole.USER, "Merhaba"),
+            ChatMessage(ChatRole.ASSISTANT, "Merhaba!"),
+            ChatMessage(ChatRole.USER, "Tisch?"),
+        ]
+    )
+
+    assert reply == "**der Tisch**: masa"
+    call = models.calls[0]
+    assert [content.role for content in call["contents"]] == ["user", "model", "user"]
+    assert call["contents"][2].parts[0].text == "Tisch?"
+    assert call["config"].system_instruction == prompts.CHAT_SYSTEM
+    assert call["config"].response_mime_type is None
+
+
+def test_chat_rejects_an_empty_answer() -> None:
+    gemini, _ = provider(response(None))
+
+    with pytest.raises(AIResponseError):
+        gemini.chat([ChatMessage(ChatRole.USER, "Hallo")])

@@ -261,6 +261,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Chat
+         * @description Ask the AI tutor a quick question. Nothing is stored; send the recent history.
+         */
+        post: operations["chat_api_chat_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -328,6 +348,33 @@ export interface components {
             /** Vocabulary Count */
             vocabulary_count: number;
         };
+        /** ChatMessageIn */
+        ChatMessageIn: {
+            role: components["schemas"]["ChatRole"];
+            /** Content */
+            content: string;
+        };
+        /** ChatReply */
+        ChatReply: {
+            /**
+             * Reply
+             * @description The tutor's answer in Turkish (simple Markdown).
+             */
+            reply: string;
+        };
+        /** ChatRequest */
+        ChatRequest: {
+            /**
+             * Messages
+             * @description The conversation, oldest first; the last message is the new question. Only the most recent messages are sent to the AI.
+             */
+            messages: components["schemas"]["ChatMessageIn"][];
+        };
+        /**
+         * ChatRole
+         * @enum {string}
+         */
+        ChatRole: "user" | "assistant";
         /** DocumentAnalysisRead */
         DocumentAnalysisRead: {
             document: components["schemas"]["DocumentRead"];
@@ -1068,6 +1115,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WeakWordRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    chat_api_chat_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChatRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatReply"];
                 };
             };
             /** @description Validation Error */

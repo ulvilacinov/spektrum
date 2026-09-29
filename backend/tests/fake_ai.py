@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from typing import Any
 
-from app.domain.entities import ExtractedPage
+from app.domain.entities import ChatMessage, ExtractedPage
 from app.domain.enums import VocabularyItemType
 from app.services.ai import AIProvider
 from app.services.ai.schemas import (
@@ -42,6 +42,8 @@ class FakeAIProvider(AIProvider):
         self.vocabulary_calls: list[tuple[str, list[int], str | None]] = []
         self.evaluation: AnswerEvaluationResult | None = None
         self.evaluation_calls: list[AnswerEvaluationRequest] = []
+        self.chat_reply = "Merhaba! Nasıl yardımcı olabilirim?"
+        self.chat_calls: list[list[ChatMessage]] = []
 
     def extract_chapters(self, pages: Sequence[ExtractedPage]) -> ChapterDetectionResult:
         self.chapter_calls.append([page.page_number for page in pages])
@@ -78,3 +80,9 @@ class FakeAIProvider(AIProvider):
             explanation="Anlam yanlış.",
             error_type="meaning",
         )
+
+    def chat(self, messages: Sequence[ChatMessage]) -> str:
+        self.chat_calls.append(list(messages))
+        if self.error:
+            raise self.error
+        return self.chat_reply

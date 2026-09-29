@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.core.config import Settings, get_settings
 from app.db.session import SessionLocal
 from app.services.ai import AIProvider, create_ai_provider
+from app.services.chat import ChatService
 from app.services.documents import (
     ChapterService,
     DocumentAnalysisService,
@@ -136,3 +137,12 @@ def get_progress_service(
 
 
 ProgressServiceDep = Annotated[ProgressService, Depends(get_progress_service)]
+
+
+def get_chat_service(
+    ai_provider_factory: Annotated[Callable[[], AIProvider], Depends(get_ai_provider_factory)],
+) -> ChatService:
+    return ChatService(ai_provider_factory=ai_provider_factory)
+
+
+ChatServiceDep = Annotated[ChatService, Depends(get_chat_service)]

@@ -58,3 +58,8 @@ class EvaluationMethod(StrEnum):
 class SessionMode(StrEnum):
     NEW = "new"  # the chapter's next unstudied words
     REVIEW = "review"  # studied but not yet mastered words, weak ones first
+
+
+class ChatRole(StrEnum):
+    USER = "user"
+    ASSISTANT = "assistant"

@@ -12,7 +12,7 @@ def create_ai_provider(settings: Settings) -> AIProvider:
     if settings.ai_provider == "gemini":
         api_key = settings.gemini_api_key.get_secret_value() if settings.gemini_api_key else ""
         if not api_key.strip():
-            raise AINotConfiguredError("GEMINI_API_KEY is not set; document analysis needs it.")
+            raise AINotConfiguredError("GEMINI_API_KEY is not set; the AI features need it.")
         return GeminiAIProvider(
             api_key=api_key.strip(),
             model=settings.gemini_model,

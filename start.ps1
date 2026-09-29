@@ -90,5 +90,5 @@ Write-Host ''
 
 Push-Location $backend
 try {
-  & (Join-Path $venv 'uvicorn.exe') app.main:app --host $Listen --port $Port
+  & (Join-Path $venv 'uvicorn.exe') app.main:app --host $Listen --port $Port --timeout-graceful-shutdown 5
 } finally { Pop-Location }

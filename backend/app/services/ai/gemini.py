@@ -8,7 +8,8 @@ from google import genai
 from google.genai import errors, types
 from pydantic import BaseModel, ValidationError
 
-from app.domain.entities import ExtractedPage
+from app.domain.entities import ChatMessage, ExtractedPage
+from app.domain.enums import ChatRole
 from app.services.ai import prompts
 from app.services.ai.errors import AIProviderError, AIResponseError
 from app.services.ai.provider import AIProvider
@@ -84,6 +85,27 @@ class GeminiAIProvider(AIProvider):
             schema=AnswerEvaluationResult,
         )
 
+    def chat(self, messages: Sequence[ChatMessage]) -> str:
+        contents = [
+            types.Content(
+                role="user" if message.role == ChatRole.USER else "model",
+                parts=[types.Part.from_text(text=message.content)],
+            )
+            for message in messages
+        ]
+        config = types.GenerateContentConfig(
+            system_instruction=prompts.CHAT_SYSTEM,
+            automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
+        )
+        response = self._request(contents, config)
+        text = (response.text or "").strip()
+        if not text:
+            raise AIResponseError(
+                "The AI service returned an empty answer.",
+                details={"reason": f"finish reason: {_finish_reason(response)}"},
+            )
+        return text
+
     def _generate[T: BaseModel](self, *, system: str, prompt: str, schema: type[T]) -> T:
         config = types.GenerateContentConfig(
             system_instruction=system,
@@ -119,7 +141,7 @@ class GeminiAIProvider(AIProvider):
             details={"reason": problem[:500]},
         )
 
-    def _request(self, prompt: str, config: types.GenerateContentConfig) -> Any:
+    def _request(self, contents: Any, config: types.GenerateContentConfig) -> Any:
         """One generate_content call; waits out per-minute rate limits (HTTP 429)."""
         waits = 0
         while True:
@@ -127,7 +149,7 @@ class GeminiAIProvider(AIProvider):
                 self.rate_limiter.acquire()
             try:
                 return self.client.models.generate_content(
-                    model=self.model, contents=prompt, config=config
+                    model=self.model, contents=contents, config=config
                 )
             except errors.APIError as exc:
                 delay = _rate_limit_delay(exc)
