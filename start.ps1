@@ -26,6 +26,28 @@ function Invoke-Step([string]$title, [scriptblock]$command) {
   if ($LASTEXITCODE -ne 0) { throw "$title başarısız oldu (çıkış kodu $LASTEXITCODE)." }
 }
 
+# A click into a classic console window starts "QuickEdit" selection, which pauses every
+# write to the window and so freezes the server at its next log line. Turn it off for this
+# window only.
+function Disable-QuickEdit {
+  try {
+    Add-Type -Namespace Spektrum -Name ConsoleMode -MemberDefinition @'
+[DllImport("kernel32.dll")] public static extern IntPtr GetStdHandle(int handle);
+[DllImport("kernel32.dll")] public static extern bool GetConsoleMode(IntPtr handle, out uint mode);
+[DllImport("kernel32.dll")] public static extern bool SetConsoleMode(IntPtr handle, uint mode);
+'@
+    $inputHandle = [Spektrum.ConsoleMode]::GetStdHandle(-10)  # STD_INPUT_HANDLE
+    $mode = [uint32]0
+    if ([Spektrum.ConsoleMode]::GetConsoleMode($inputHandle, [ref]$mode)) {
+      # Clear ENABLE_QUICK_EDIT_MODE (0x40); ENABLE_EXTENDED_FLAGS (0x80) makes it stick.
+      [void][Spektrum.ConsoleMode]::SetConsoleMode($inputHandle, ($mode -band (-bnot 0x40)) -bor 0x80)
+    }
+  } catch {
+    # Not a classic console (e.g. redirected output): nothing to do.
+  }
+}
+Disable-QuickEdit
+
 if (-not (Test-Path (Join-Path $backend '.env'))) {
   throw 'backend\.env bulunamadı. backend\.env.example dosyasını kopyalayıp GEMINI_API_KEY girin.'
 }
