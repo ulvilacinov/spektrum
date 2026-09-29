@@ -46,6 +46,15 @@ class Settings(BaseSettings):
     gemini_api_key: SecretStr | None = None
     gemini_model: str = "gemini-3.8-flash"
 
+    @field_validator("database_url")
+    @classmethod
+    def use_psycopg_driver(cls, value: str) -> str:
+        """Hosted providers (Neon, Fly) hand out postgres:// URLs; SQLAlchemy needs the driver."""
+        for prefix in ("postgres://", "postgresql://"):
+            if value.startswith(prefix):
+                return "postgresql+psycopg://" + value.removeprefix(prefix)
+        return value
+
     @field_validator("upload_dir", "frontend_dist_dir")
     @classmethod
     def resolve_path(cls, value: Path | None) -> Path | None:

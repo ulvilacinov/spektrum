@@ -6,7 +6,7 @@ kelimeleri gruplar hâlinde öğren, quiz'le pekiştir, zayıf kelimeleri tekrar
 - `backend/` — FastAPI + PostgreSQL + Gemini ([backend/README.md](backend/README.md))
 - `frontend/` — React arayüzü ([frontend/README.md](frontend/README.md))
 - `docs/SPEC.md` — ürün tanımı
-- `deploy/` — AWS kurulumu ve otomatik yayın ([deploy/README.md](deploy/README.md))
+- Canlı: **https://spektrum-kelime.fly.dev** (Fly.io + Neon; aşağıda "İnternette yayın")
 
 ## Kendi bilgisayarında çalıştırma
 
@@ -99,3 +99,33 @@ docker exec vocab-postgres pg_restore -U vocab -d vocab --clean --if-exists /tmp
 `uploads/` klasörünü de ayrıca kopyala.
 
 `docker compose down -v` volume'u siler; bütün ilerlemen gider. Kullanma.
+
+## İnternette yayın (Fly.io + Neon)
+
+- **Uygulama:** Fly.io, uygulama adı `spektrum-kelime`, bölge Frankfurt (`fly.toml`). Tek makine;
+  boştayken durur, ilk istekte birkaç saniyede açılır. PDF'ler `uploads` volume'unda
+  (1 GB, günlük snapshot, 30 gün saklanır).
+- **Veritabanı:** Neon (ücretsiz plan, Frankfurt). Bağlantı adresi Fly'da `DATABASE_URL`
+  secret'ı olarak durur; Neon'un kendi yedek/geri dönüş geçmişi vardır.
+- **Otomatik yayın:** `main` dalına her push'ta GitHub Actions testleri çalıştırır, sonra
+  `flyctl deploy` ile yayınlar (`.github/workflows/deploy.yml`). Migration'lar yeni sürüm
+  açılmadan önce çalışır; hata olursa eski sürüm yayında kalır. GitHub'daki secret:
+  `FLY_API_TOKEN` (yalnızca bu uygulamaya deploy yetkisi, 1 yıl geçerli), değişken:
+  `FLY_DEPLOY=true`.
+
+Sık kullanılan komutlar (`flyctl` = `%USERPROFILE%\.fly\bin\flyctl.exe`):lyctl.exe`):
+
+```powershell
+flyctl logs --app spektrum-kelime                         # canlı loglar
+flyctl status --app spektrum-kelime
+flyctl ssh console --app spektrum-kelime -C "python -m app.cli set-password admin"
+flyctl ssh console --app spektrum-kelime -C "python -m app.cli create-user anna"
+flyctl secrets set GEMINI_API_KEY=... --app spektrum-kelime   # anahtar değişirse
+```
+
+Deploy token'ının süresi dolunca (1 yıl) yenisini oluşturup GitHub'a koy:
+`flyctl tokens create deploy --app spektrum-kelime --expiry 8760h` → GitHub → Settings →
+Secrets → `FLY_API_TOKEN`.
+
+Not: PDF analizi tek istekte ~150 sn sürer; Fly'ın proxy'si çok uzun süren istekleri kesebilir.
+Gerekirse analizi arka plan işine çevirebiliriz.

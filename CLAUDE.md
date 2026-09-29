@@ -214,15 +214,15 @@ geht") are not rejected.
       Frontend: login page instead of the app while logged out, user + "Çıkış" in the header,
       any 401 returns to the login page, logout clears cached data and the chat history.
       Migration verified on a copy of the real database (upgrade/downgrade/upgrade, no drift).
-- [ ] DEPLOY — AWS: one EC2 t3.small (Ubuntu 24.04, eu-central-1) + Docker Compose
-      (`deploy/`: Postgres, app image, Caddy with `<ip-dashed>.sslip.io` + Let's Encrypt).
-      Root `Dockerfile` (node build → python:3.12-slim, non-root, migrations on start, proxy
-      headers). `.github/workflows/deploy.yml`: tests → image to GHCR (`:sha`, `:latest`) →
-      deploy over SSH (writes `/opt/spektrum/.env` from secrets EC2_HOST, EC2_SSH_KEY,
-      GEMINI_API_KEY, POSTGRES_PASSWORD and variable BACKUP_BUCKET; runs only when variable
-      DEPLOY_ENABLED=true). Nightly `backup.sh` → S3 (instance role, PutObject only).
-      Smoke-tested locally. Waiting for the EC2 server (console steps in `deploy/README.md`),
-      then: secrets, first deploy, local data migration.
+- [x] DEPLOY — Fly.io app `spektrum-kelime` (fra, `fly.toml`: shared-cpu-1x 512 MB,
+      auto stop/start, volume `uploads` → /data/uploads, 30-day snapshots,
+      `release_command = "alembic upgrade head"`), PostgreSQL on Neon (direct endpoint;
+      `config.use_psycopg_driver` turns postgres:// URLs into postgresql+psycopg://). Root
+      `Dockerfile` + `docker-entrypoint.sh` (chowns the volume, drops to user `app`, sets
+      HOME=/tmp so libpq does not trip over /root/.postgresql). Fly secrets: DATABASE_URL,
+      GEMINI_API_KEY. `.github/workflows/deploy.yml`: tests → `flyctl deploy --remote-only`
+      on push to main (secret FLY_API_TOKEN, variable FLY_DEPLOY=true) → health check. Local
+      data (users, 738 items, progress) restored into Neon; the PDF copied to the volume.
 - [x] Self-hosting — `start.ps1` (one command), backend serves `frontend/dist` when
       `FRONTEND_DIST_DIR` is set, Postgres published on 127.0.0.1 only with
       `restart: unless-stopped`, `DATABASE_URL` → 127.0.0.1, root README with Tailscale access

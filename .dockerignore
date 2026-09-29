@@ -10,4 +10,4 @@ backup
 *.dump
 .git
 .github
-deploy
+fly.toml

@@ -21,18 +21,18 @@ COPY backend/alembic ./alembic
 COPY backend/alembic.ini ./
 COPY --from=frontend /src/frontend/dist /app/frontend/dist
 
-RUN useradd --system --uid 10001 --no-create-home app \
-    && mkdir -p /data/uploads && chown app /data/uploads
-USER app
+RUN useradd --system --uid 10001 --user-group --no-create-home app \
+    && mkdir -p /data/uploads && chown app:app /data/uploads
+# Starts as root only to take over the mounted uploads volume, then drops to "app".
+COPY --chmod=755 docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
 ENV ENVIRONMENT=production \
     FRONTEND_DIST_DIR=/app/frontend/dist \
     UPLOAD_DIR=/data/uploads \
     SESSION_COOKIE_SECURE=true
 EXPOSE 8000
-HEALTHCHECK --interval=30s --timeout=5s --start-period=30s \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')"
 
-# Migrations run on every start (a no-op when up to date). Behind Caddy, trust its
-# X-Forwarded-For so the login throttle sees the real client address.
-CMD ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips='*' --timeout-graceful-shutdown 10"]
+# Migrations run before each deploy (fly.toml release_command: alembic upgrade head).
+# Behind the hosting proxy, trust X-Forwarded-For so the login throttle sees the client.
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips=*", "--timeout-graceful-shutdown", "10"]
