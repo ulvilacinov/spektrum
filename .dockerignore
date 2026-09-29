@@ -1,0 +1,13 @@
+**/.venv
+**/node_modules
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+**/.env
+backend/uploads
+frontend/dist
+backup
+*.dump
+.git
+.github
+deploy

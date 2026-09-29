@@ -6,6 +6,7 @@ kelimeleri gruplar hâlinde öğren, quiz'le pekiştir, zayıf kelimeleri tekrar
 - `backend/` — FastAPI + PostgreSQL + Gemini ([backend/README.md](backend/README.md))
 - `frontend/` — React arayüzü ([frontend/README.md](frontend/README.md))
 - `docs/SPEC.md` — ürün tanımı
+- `deploy/` — AWS kurulumu ve otomatik yayın ([deploy/README.md](deploy/README.md))
 
 ## Kendi bilgisayarında çalıştırma
 
