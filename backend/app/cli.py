@@ -5,15 +5,20 @@
     rename-user OLD NEW  change a username
     list-users           show all accounts
     check                warn about a missing account or password (used by start.ps1)
+    ensure-secret-key    add a random SECRET_KEY to backend/.env if there is none (start.ps1)
 
 ``--password-stdin`` reads the password from standard input instead (for scripts).
 """
 
 import argparse
 import getpass
+import re
+import secrets
 import sys
 from datetime import timedelta
+from pathlib import Path
 
+from app.core.config import BASE_DIR
 from app.core.exceptions import AppError
 from app.db.session import SessionLocal
 from app.services.auth import AuthService, LoginThrottle
@@ -28,6 +33,21 @@ def _read_password(from_stdin: bool) -> str:
     return password
 
 
+def ensure_secret_key(env_file: Path = BASE_DIR / ".env") -> bool:
+    """Give a local installation a stable SECRET_KEY. True when one was added."""
+    text = env_file.read_text(encoding="utf-8") if env_file.exists() else ""
+    if re.search(r"^SECRET_KEY=\S+", text, re.MULTILINE):
+        return False
+    line = f"SECRET_KEY={secrets.token_urlsafe(32)}"
+    if re.search(r"^SECRET_KEY=", text, re.MULTILINE):
+        text = re.sub(r"^SECRET_KEY=.*$", line, text, count=1, flags=re.MULTILINE)
+    else:
+        comment = "# Encrypts the users' AI API keys (added by start.ps1)"
+        text = "\n".join([text.rstrip(), "", comment, line, ""])
+    env_file.write_text(text.lstrip(), encoding="utf-8")
+    return True
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m app.cli", description="Manage accounts.")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -40,7 +60,13 @@ def main(argv: list[str] | None = None) -> int:
     rename.add_argument("new_username")
     commands.add_parser("list-users")
     commands.add_parser("check")
+    commands.add_parser("ensure-secret-key")
     args = parser.parse_args(argv)
+
+    if args.command == "ensure-secret-key":
+        if ensure_secret_key():
+            print("SECRET_KEY backend/.env dosyasına eklendi.")
+        return 0
 
     with SessionLocal() as session:
         # Session lifetime and throttle are irrelevant for account management.

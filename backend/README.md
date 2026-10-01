@@ -92,8 +92,21 @@ shape `{"error": {"code", "message", "details"}}` (415 wrong type, 413 too large
 
 ### Analysis
 
-Set `GEMINI_API_KEY` in `.env` (optionally `GEMINI_MODEL`, default `gemini-3.8-flash`).
-On Gemini's free tier keep `AI_REQUESTS_PER_MINUTE=5`: requests are then spaced 12 s apart,
+Every user chooses the AI on the settings page (`/settings`, or the API below): Google
+Gemini, OpenAI, Anthropic Claude, or any OpenAI-compatible service (DeepSeek, OpenRouter,
+Groq, ... with its https base URL), plus their own API key and model. Keys are stored
+encrypted with `SECRET_KEY`. Until a user saves settings, analysis, open-answer evaluation
+and chat answer 503 `ai_not_configured`.
+
+| Method | Path | |
+|---|---|---|
+| GET | `/api/ai-settings` | Provider, model, base URL and the key's last characters (never the key). |
+| PUT | `/api/ai-settings` | {provider, model, base_url?, api_key?}; without `api_key` the saved key is kept (same provider/URL). |
+| DELETE | `/api/ai-settings` | Forget the key (AI features off). |
+| POST | `/api/ai-settings/models` | Models the entered or saved key can use. |
+| POST | `/api/ai-settings/test` | One tiny request with these values; nothing is saved. |
+
+With Gemini's free tier keep `AI_REQUESTS_PER_MINUTE=5`: requests are then spaced 12 s apart,
 so a 12-chapter book takes about 3 minutes. Rate-limit responses (429) are waited out;
 an exhausted daily quota fails the analysis with a clear error.
 `POST /api/documents/{id}/analyze` then:
@@ -173,4 +186,5 @@ ruff check .
 - `app/services/pdf` — PyMuPDF text extraction (page by page, 1-based page numbers).
 - `app/services/documents` — upload validation, file storage, document analysis
   (chapter planning, vocabulary grounding).
-- `app/services/ai` — `AIProvider` interface, Gemini implementation, prompts, output schemas.
+- `app/services/ai` — `AIProvider` interface, Gemini / OpenAI / Anthropic implementations, prompts, output schemas.
+- `app/services/ai_settings` — per-user provider, model and encrypted API key.

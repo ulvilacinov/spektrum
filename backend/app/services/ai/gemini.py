@@ -6,20 +6,14 @@ from typing import Any
 
 from google import genai
 from google.genai import errors, types
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 
-from app.domain.entities import ChatMessage, ExtractedPage
+from app.domain.entities import ChatMessage
 from app.domain.enums import ChatRole
 from app.services.ai import prompts
-from app.services.ai.errors import AIProviderError, AIResponseError
-from app.services.ai.provider import AIProvider
+from app.services.ai.base import StructuredAIProvider, truncated_error
+from app.services.ai.errors import AIResponseError, provider_error
 from app.services.ai.rate_limit import RateLimiter
-from app.services.ai.schemas import (
-    AnswerEvaluationRequest,
-    AnswerEvaluationResult,
-    ChapterDetectionResult,
-    VocabularyExtractionResult,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +29,7 @@ MAX_RATE_LIMIT_DELAY = 90.0
 MAX_RATE_LIMIT_WAITS = 3
 
 
-class GeminiAIProvider(AIProvider):
+class GeminiAIProvider(StructuredAIProvider):
     def __init__(
         self,
         *,
@@ -47,9 +41,8 @@ class GeminiAIProvider(AIProvider):
         client: Any | None = None,
         sleep: Callable[[float], None] = time.sleep,
     ) -> None:
+        super().__init__(max_attempts=max_attempts)
         self.model = model
-        # Extra attempts only for answers that are not valid structured output.
-        self.max_attempts = max_attempts
         self.rate_limiter = rate_limiter
         self._sleep = sleep
         self.client = client or genai.Client(
@@ -59,31 +52,19 @@ class GeminiAIProvider(AIProvider):
             ),
         )
 
-    def extract_chapters(self, pages: Sequence[ExtractedPage]) -> ChapterDetectionResult:
-        return self._generate(
-            system=prompts.CHAPTER_DETECTION_SYSTEM,
-            prompt=prompts.chapter_detection_prompt(pages),
-            schema=ChapterDetectionResult,
+    def _generate_structured(
+        self, *, system: str, prompt: str, schema: type[BaseModel]
+    ) -> str | None:
+        config = types.GenerateContentConfig(
+            system_instruction=system,
+            response_mime_type="application/json",
+            response_schema=schema,
+            automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
         )
-
-    def extract_vocabulary(
-        self,
-        chapter_title: str,
-        pages: Sequence[ExtractedPage],
-        next_chapter_title: str | None = None,
-    ) -> VocabularyExtractionResult:
-        return self._generate(
-            system=prompts.VOCABULARY_EXTRACTION_SYSTEM,
-            prompt=prompts.vocabulary_extraction_prompt(chapter_title, pages, next_chapter_title),
-            schema=VocabularyExtractionResult,
-        )
-
-    def evaluate_answer(self, request: AnswerEvaluationRequest) -> AnswerEvaluationResult:
-        return self._generate(
-            system=prompts.ANSWER_EVALUATION_SYSTEM,
-            prompt=prompts.answer_evaluation_prompt(request),
-            schema=AnswerEvaluationResult,
-        )
+        response = self._request(prompt, config)
+        if _finish_reason(response) == types.FinishReason.MAX_TOKENS:
+            raise truncated_error()
+        return response.text
 
     def chat(self, messages: Sequence[ChatMessage]) -> str:
         contents = [
@@ -106,40 +87,19 @@ class GeminiAIProvider(AIProvider):
             )
         return text
 
-    def _generate[T: BaseModel](self, *, system: str, prompt: str, schema: type[T]) -> T:
-        config = types.GenerateContentConfig(
-            system_instruction=system,
-            response_mime_type="application/json",
-            response_schema=schema,
-            automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
-        )
-        problem = "no attempt made"
-        for attempt in range(1, self.max_attempts + 1):
-            response = self._request(prompt, config)
-            if _finish_reason(response) == types.FinishReason.MAX_TOKENS:
-                raise AIResponseError(
-                    "The AI response was cut off because it was too long. "
-                    "Lower AI_MAX_PAGES_PER_REQUEST and analyze again."
-                )
-            text = response.text
-            if not text:
-                problem = f"empty response (finish reason: {_finish_reason(response)})"
-            else:
-                try:
-                    return schema.model_validate_json(text)
-                except ValidationError as exc:
-                    problem = f"invalid structured output: {exc.errors()[:3]}"
-            logger.warning(
-                "Gemini attempt %d/%d for %s failed: %s",
-                attempt,
-                self.max_attempts,
-                schema.__name__,
-                problem,
-            )
-        raise AIResponseError(
-            "The AI service did not return valid structured output.",
-            details={"reason": problem[:500]},
-        )
+    def list_models(self) -> list[str]:
+        try:
+            models = list(self.client.models.list())
+        except errors.APIError as exc:
+            raise provider_error(exc.code, exc) from exc
+        except Exception as exc:
+            raise provider_error(None, exc) from exc
+        names = [
+            (model.name or "").removeprefix("models/")
+            for model in models
+            if "generateContent" in (model.supported_actions or [])
+        ]
+        return sorted(name for name in names if name)
 
     def _request(self, contents: Any, config: types.GenerateContentConfig) -> Any:
         """One generate_content call; waits out per-minute rate limits (HTTP 429)."""
@@ -154,12 +114,12 @@ class GeminiAIProvider(AIProvider):
             except errors.APIError as exc:
                 delay = _rate_limit_delay(exc)
                 if delay is None or delay > MAX_RATE_LIMIT_DELAY or waits >= MAX_RATE_LIMIT_WAITS:
-                    raise _provider_error(exc) from exc
+                    raise provider_error(exc.code, exc) from exc
                 waits += 1
                 logger.warning("Gemini rate limit hit; retrying in %.0fs", delay)
                 self._sleep(delay)
             except Exception as exc:  # transport errors, timeouts
-                raise _provider_error(exc) from exc
+                raise provider_error(None, exc) from exc
 
 
 def _rate_limit_delay(exc: errors.APIError) -> float | None:
@@ -170,17 +130,6 @@ def _rate_limit_delay(exc: errors.APIError) -> float | None:
     if not match:
         return DEFAULT_RATE_LIMIT_DELAY
     return float(match.group(1) or match.group(2)) + 1.0
-
-
-def _provider_error(exc: Exception) -> AIProviderError:
-    code = exc.code if isinstance(exc, errors.APIError) else None
-    if code == 429:
-        message = "The AI service quota is exhausted. Try again later or raise the plan's limits."
-    elif code is not None and code >= 500:
-        message = "The AI service is temporarily overloaded. Try again in a few minutes."
-    else:
-        message = "The AI service request failed."
-    return AIProviderError(message, details={"reason": str(exc)[:500]})
 
 
 def _finish_reason(response: Any) -> Any:

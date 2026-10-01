@@ -3,7 +3,7 @@
 Almanca → Türkçe kelime öğrenme uygulaması: PDF yükle, AI bölümleri ve kelimeleri çıkarsın,
 kelimeleri gruplar hâlinde öğren, quiz'le pekiştir, zayıf kelimeleri tekrar et.
 
-- `backend/` — FastAPI + PostgreSQL + Gemini ([backend/README.md](backend/README.md))
+- `backend/` — FastAPI + PostgreSQL + seçilebilir yapay zekâ ([backend/README.md](backend/README.md))
 - `frontend/` — React arayüzü ([frontend/README.md](frontend/README.md))
 - `docs/SPEC.md` — ürün tanımı
 - Canlı: **https://spektrum-kelime.fly.dev** (Fly.io + Neon; aşağıda "İnternette yayın")
@@ -11,7 +11,8 @@ kelimeleri gruplar hâlinde öğren, quiz'le pekiştir, zayıf kelimeleri tekrar
 ## Kendi bilgisayarında çalıştırma
 
 Gerekenler (bir kere): Docker Desktop, Python 3.12, Node.js 20+ ve `backend/.env`
-(`backend/.env.example` dosyasını kopyalayıp `GEMINI_API_KEY` gir). Backend'in sanal ortamı
+(`backend/.env.example` dosyasının kopyası). Yapay zekâ sağlayıcısını, modelini ve API
+anahtarını her kullanıcı sitede **⚙️ Ayarlar** sayfasından kendisi seçer. Backend'in sanal ortamı
 kurulu olmalı (`backend/README.md` → Setup).
 
 ```powershell
@@ -105,8 +106,12 @@ docker exec vocab-postgres pg_restore -U vocab -d vocab --clean --if-exists /tmp
 - **Uygulama:** Fly.io, uygulama adı `spektrum-kelime`, bölge Frankfurt (`fly.toml`). Tek makine;
   boştayken durur, ilk istekte birkaç saniyede açılır. PDF'ler `uploads` volume'unda
   (1 GB, günlük snapshot, 30 gün saklanır).
+- **Yapay zekâ:** Her kullanıcı kendi sağlayıcısını, modelini ve API anahtarını ⚙️ Ayarlar'dan
+  girer. Anahtarlar `SECRET_KEY` secret'ıyla şifrelenir; bu secret değişirse kayıtlı anahtarlar
+  okunamaz ve kullanıcıların yeniden girmesi gerekir.
 - **Veritabanı:** Neon (ücretsiz plan, Frankfurt). Bağlantı adresi Fly'da `DATABASE_URL`
-  secret'ı olarak durur; Neon'un kendi yedek/geri dönüş geçmişi vardır.
+  secret'ı olarak durur; Neon'un kendi yedek/geri dönüş geçmişi vardır. Fly secret'ları:
+  `DATABASE_URL`, `SECRET_KEY`.
 - **Otomatik yayın:** `main` dalına her push'ta GitHub Actions testleri çalıştırır, sonra
   `flyctl deploy` ile yayınlar (`.github/workflows/deploy.yml`). Migration'lar yeni sürüm
   açılmadan önce çalışır; hata olursa eski sürüm yayında kalır. GitHub'daki secret:
@@ -120,7 +125,6 @@ flyctl logs --app spektrum-kelime                         # canlı loglar
 flyctl status --app spektrum-kelime
 flyctl ssh console --app spektrum-kelime -C "python -m app.cli set-password admin"
 flyctl ssh console --app spektrum-kelime -C "python -m app.cli create-user anna"
-flyctl secrets set GEMINI_API_KEY=... --app spektrum-kelime   # anahtar değişirse
 ```
 
 Deploy token'ının süresi dolunca (1 yıl) yenisini oluşturup GitHub'a koy:

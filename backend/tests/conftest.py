@@ -58,7 +58,6 @@ def settings(upload_dir: Path) -> Settings:
             "max_upload_size_mb": 1,
             "ai_max_pages_per_request": 5,
             "ai_max_concurrency": 4,
-            "gemini_api_key": None,
         }
     )
 

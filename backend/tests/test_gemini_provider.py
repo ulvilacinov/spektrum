@@ -7,9 +7,9 @@ from google.genai import errors, types
 
 from app.core.config import Settings
 from app.domain.entities import ChatMessage, ExtractedPage
-from app.domain.enums import ChatRole
+from app.domain.enums import AIProviderKind, ChatRole
 from app.services.ai import (
-    AINotConfiguredError,
+    AIConfig,
     AIProviderError,
     AIResponseError,
     create_ai_provider,
@@ -135,21 +135,28 @@ def test_sdk_errors_become_provider_errors() -> None:
     assert exc_info.value.details == {"reason": "quota exceeded"}
 
 
-@pytest.mark.parametrize("api_key", [None, "", "   "])
-def test_factory_requires_an_api_key(api_key: str | None) -> None:
-    settings = Settings(_env_file=None, gemini_api_key=api_key)
+def test_factory_builds_the_configured_gemini_model() -> None:
+    config = AIConfig(provider=AIProviderKind.GEMINI, model="gemini-x", api_key="key")
 
-    with pytest.raises(AINotConfiguredError):
-        create_ai_provider(settings)
-
-
-def test_factory_builds_gemini_provider() -> None:
-    settings = Settings(_env_file=None, gemini_api_key="key", gemini_model="gemini-x")
-
-    ai = create_ai_provider(settings)
+    ai = create_ai_provider(config, Settings(_env_file=None))
 
     assert isinstance(ai, GeminiAIProvider)
     assert ai.model == "gemini-x"
+
+
+def test_gemini_lists_only_models_that_generate_content() -> None:
+    models = SimpleNamespace(
+        list=lambda: [
+            SimpleNamespace(name="models/gemini-x", supported_actions=["generateContent"]),
+            SimpleNamespace(name="models/embedding-001", supported_actions=["embedContent"]),
+            SimpleNamespace(name="models/gemini-a", supported_actions=["generateContent"]),
+        ]
+    )
+    gemini = GeminiAIProvider(
+        api_key="k", model="m", timeout_seconds=5, client=SimpleNamespace(models=models)
+    )
+
+    assert gemini.list_models() == ["gemini-a", "gemini-x"]
 
 
 def api_error(code: int, message: str) -> errors.APIError:
@@ -183,8 +190,9 @@ def test_rate_limit_waits_the_suggested_delay_and_retries() -> None:
 def test_exhausted_daily_quota_fails_without_waiting() -> None:
     gemini, models, sleeps = limited_provider(api_error(429, "Please retry in 3600s."))
 
-    with pytest.raises(AIProviderError, match="quota is exhausted"):
+    with pytest.raises(AIProviderError, match="quota is exhausted") as exc_info:
         gemini.extract_chapters(PAGES)
+    assert exc_info.value.code == "ai_quota_exhausted"
     assert sleeps == []
     assert len(models.calls) == 1
 
@@ -225,14 +233,34 @@ def test_every_request_passes_the_rate_limiter() -> None:
 
 
 def test_factory_shares_one_rate_limiter_per_model() -> None:
-    settings = Settings(_env_file=None, gemini_api_key="key", ai_requests_per_minute=5)
+    config = AIConfig(provider=AIProviderKind.GEMINI, model="gemini-y", api_key="key")
+    limited = Settings(_env_file=None, ai_requests_per_minute=5)
 
-    first, second = create_ai_provider(settings), create_ai_provider(settings)
+    first, second = create_ai_provider(config, limited), create_ai_provider(config, limited)
 
     assert first.rate_limiter is not None
     assert first.rate_limiter is second.rate_limiter
-    unlimited = Settings(_env_file=None, gemini_api_key="key", ai_requests_per_minute=None)
-    assert create_ai_provider(unlimited).rate_limiter is None
+    unlimited = Settings(_env_file=None, ai_requests_per_minute=None)
+    assert create_ai_provider(config, unlimited).rate_limiter is None
+
+
+def test_invalid_gemini_key_is_reported_as_such() -> None:
+    invalid = errors.ClientError(
+        400,
+        {
+            "error": {
+                "code": 400,
+                "message": "API key not valid. Please pass a valid API key.",
+                "status": "INVALID_ARGUMENT",
+                "details": [{"reason": "API_KEY_INVALID"}],
+            }
+        },
+    )
+    gemini, _, _ = limited_provider(invalid)
+
+    with pytest.raises(AIProviderError) as exc_info:
+        gemini.extract_chapters(PAGES)
+    assert exc_info.value.code == "ai_invalid_key"
 
 
 def test_server_overload_has_a_helpful_message() -> None:

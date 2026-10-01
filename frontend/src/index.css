@@ -1021,6 +1021,65 @@ select:focus-visible {
   font-size: 0.9rem;
 }
 
+.header__settings {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.45rem 0.8rem;
+  border-radius: 14px;
+  background: rgb(255 255 255 / 0.2);
+  box-shadow: 0 3px 0 rgb(0 0 0 / 0.15);
+  color: #ffffff;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+/* Settings */
+
+.settings select,
+.settings input[type='url'] {
+  min-width: 0;
+  font: inherit;
+  font-weight: 700;
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  border: 3px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-soft);
+  color: var(--text);
+}
+
+.settings select:focus,
+.settings input[type='url']:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.settings__model {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.settings__model input,
+.settings__model select {
+  flex: 1;
+  min-width: 0;
+}
+
+.settings__hint {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.chat__notice {
+  padding: 0.75rem 0.9rem;
+  border-radius: 14px;
+  background: var(--warning-bg);
+  color: var(--warning);
+  font-weight: 700;
+}
+
 /* Login */
 
 .login {
@@ -1264,6 +1323,14 @@ input[type='password']:focus {
 
   .header__username {
     display: none;
+  }
+
+  .header__settings-label {
+    display: none;
+  }
+
+  .settings__model {
+    flex-direction: column;
   }
 }
 

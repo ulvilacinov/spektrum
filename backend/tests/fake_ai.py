@@ -44,6 +44,7 @@ class FakeAIProvider(AIProvider):
         self.evaluation_calls: list[AnswerEvaluationRequest] = []
         self.chat_reply = "Merhaba! Nasıl yardımcı olabilirim?"
         self.chat_calls: list[list[ChatMessage]] = []
+        self.models = ["fake-small", "fake-large"]
 
     def extract_chapters(self, pages: Sequence[ExtractedPage]) -> ChapterDetectionResult:
         self.chapter_calls.append([page.page_number for page in pages])
@@ -86,3 +87,8 @@ class FakeAIProvider(AIProvider):
         if self.error:
             raise self.error
         return self.chat_reply
+
+    def list_models(self) -> list[str]:
+        if self.error:
+            raise self.error
+        return self.models

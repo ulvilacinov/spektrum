@@ -338,10 +338,126 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ai-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Ai Settings
+         * @description The user's AI provider and model; the API key is never returned.
+         */
+        get: operations["get_ai_settings_api_ai_settings_get"];
+        /**
+         * Save Ai Settings
+         * @description Save provider, model and key (stored encrypted). Omit the key to keep the saved one.
+         */
+        put: operations["save_ai_settings_api_ai_settings_put"];
+        post?: never;
+        /**
+         * Delete Ai Settings
+         * @description Forget the key; AI features stop until a new one is saved.
+         */
+        delete: operations["delete_ai_settings_api_ai_settings_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai-settings/models": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * List Models
+         * @description Models the (entered or saved) key can use.
+         */
+        post: operations["list_models_api_ai_settings_models_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai-settings/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Test Connection
+         * @description Send one tiny request with these settings (nothing is saved).
+         */
+        post: operations["test_connection_api_ai_settings_test_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AIDraftIn */
+        AIDraftIn: {
+            provider: components["schemas"]["AIProviderKind"];
+            /**
+             * Model
+             * @default
+             */
+            model: string;
+            /** Base Url */
+            base_url?: string | null;
+            /**
+             * Api Key
+             * @description Leave empty to keep the saved key (same provider and URL).
+             */
+            api_key?: string | null;
+        };
+        /** AIModelsRead */
+        AIModelsRead: {
+            /** Models */
+            models: string[];
+        };
+        /**
+         * AIProviderKind
+         * @enum {string}
+         */
+        AIProviderKind: "gemini" | "openai" | "anthropic" | "openai_compatible";
+        /** AISettingsRead */
+        AISettingsRead: {
+            /** Configured */
+            configured: boolean;
+            provider?: components["schemas"]["AIProviderKind"] | null;
+            /** Model */
+            model?: string | null;
+            /** Base Url */
+            base_url?: string | null;
+            /**
+             * Api Key Hint
+             * @description Last characters of the saved key; the key is never returned.
+             */
+            api_key_hint?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
+        };
+        /** AITestRead */
+        AITestRead: {
+            /** Reply */
+            reply: string;
+        };
         /** AnswerResultRead */
         AnswerResultRead: {
             question: components["schemas"]["QuizQuestionRead"];
@@ -1290,6 +1406,143 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ChatReply"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_ai_settings_api_ai_settings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AISettingsRead"];
+                };
+            };
+        };
+    };
+    save_ai_settings_api_ai_settings_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AIDraftIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AISettingsRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_ai_settings_api_ai_settings_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    list_models_api_ai_settings_models_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AIDraftIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIModelsRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    test_connection_api_ai_settings_test_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AIDraftIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AITestRead"];
                 };
             };
             /** @description Validation Error */

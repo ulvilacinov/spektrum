@@ -1,5 +1,8 @@
 import { Fragment, useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 
+import { Link } from 'react-router'
+
+import { useAISettings } from '../api/aiSettings'
 import { useAskTutor, type ChatMessage } from '../api/chat'
 import { errorMessage } from '../api/client'
 import { loadChatHistory, storeChatHistory } from '../lib/chatStorage'
@@ -78,6 +81,8 @@ export function ChatPanel() {
   const [messages, setMessages] = useState<ChatMessage[]>(loadChatHistory)
   const [draft, setDraft] = useState('')
   const ask = useAskTutor()
+  const aiSettings = useAISettings()
+  const notConfigured = aiSettings.data?.configured === false
   const log = useRef<HTMLDivElement>(null)
   // Replies that arrive after "Yeni sohbet" belong to the old conversation.
   const conversation = useRef(0)
@@ -172,7 +177,16 @@ export function ChatPanel() {
           </div>
 
           <div className="chat__log" ref={log} role="log" aria-live="polite">
-            {messages.length === 0 && (
+            {notConfigured && (
+              <p className="chat__notice" role="status">
+                Sohbet için önce{' '}
+                <Link to="/settings" onClick={() => setOpen(false)}>
+                  Ayarlar
+                </Link>{' '}
+                sayfasından yapay zekâ sağlayıcını ve API anahtarını gir.
+              </p>
+            )}
+            {messages.length === 0 && !notConfigured && (
               <div className="chat__empty">
                 <span className="empty__emoji" aria-hidden>
                   🥨

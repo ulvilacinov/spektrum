@@ -24,6 +24,15 @@ type Handler = (request: Request) => Response | Promise<Response>
 
 export const TEST_USER = { id: 1, username: 'anna' }
 
+export const TEST_AI_SETTINGS = {
+  configured: true,
+  provider: 'gemini',
+  model: 'gemini-3.8-flash',
+  base_url: null,
+  api_key_hint: '1234',
+  updated_at: '2026-09-29T10:00:00Z',
+}
+
 /**
  * Replaces fetch with a tiny fake backend: ``routes`` maps "METHOD /path" to a handler.
  * Unless a test says otherwise, ``TEST_USER`` is logged in.
@@ -32,6 +41,7 @@ export const TEST_USER = { id: 1, username: 'anna' }
 export function mockApi(routes: Record<string, Handler>) {
   const handlers: Record<string, Handler> = {
     'GET /api/auth/me': () => json(TEST_USER),
+    'GET /api/ai-settings': () => json(TEST_AI_SETTINGS),
     ...routes,
   }
   const requests: Request[] = []

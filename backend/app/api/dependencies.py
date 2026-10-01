@@ -6,9 +6,11 @@ from fastapi import Depends, Request
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings, get_settings
+from app.core.crypto import SecretBox
 from app.db.models import User
 from app.db.session import SessionLocal
 from app.services.ai import AIProvider, create_ai_provider
+from app.services.ai_settings import AISettingsService, ProviderBuilder
 from app.services.auth import AuthService, LoginThrottle
 from app.services.chat import ChatService
 from app.services.documents import (
@@ -39,57 +41,6 @@ def get_db() -> Iterator[Session]:
 
 DbSession = Annotated[Session, Depends(get_db)]
 AppSettings = Annotated[Settings, Depends(get_settings)]
-
-
-def get_document_service(db: DbSession, settings: AppSettings) -> DocumentService:
-    return DocumentService(
-        db,
-        storage=LocalFileStorage(settings.upload_dir),
-        extractor=PdfTextExtractor(),
-        max_upload_bytes=settings.max_upload_size_mb * 1024 * 1024,
-    )
-
-
-DocumentServiceDep = Annotated[DocumentService, Depends(get_document_service)]
-
-
-def get_chapter_service(db: DbSession) -> ChapterService:
-    return ChapterService(db)
-
-
-ChapterServiceDep = Annotated[ChapterService, Depends(get_chapter_service)]
-
-
-def get_ai_provider(settings: AppSettings) -> AIProvider:
-    return create_ai_provider(settings)
-
-
-AIProviderDep = Annotated[AIProvider, Depends(get_ai_provider)]
-
-
-def get_ai_provider_factory(settings: AppSettings) -> Callable[[], AIProvider]:
-    """For services that need the AI only sometimes: build the provider on first use."""
-    return lambda: create_ai_provider(settings)
-
-
-def get_document_analysis_service(
-    db: DbSession,
-    settings: AppSettings,
-    documents: DocumentServiceDep,
-    ai_provider: AIProviderDep,
-) -> DocumentAnalysisService:
-    return DocumentAnalysisService(
-        db,
-        documents=documents,
-        ai_provider=ai_provider,
-        max_pages_per_request=settings.ai_max_pages_per_request,
-        max_concurrency=settings.ai_max_concurrency,
-    )
-
-
-DocumentAnalysisServiceDep = Annotated[
-    DocumentAnalysisService, Depends(get_document_analysis_service)
-]
 
 
 # One throttle for the whole process (failed logins must be counted across requests).
@@ -123,6 +74,80 @@ def get_current_user_id(user: CurrentUser) -> int:
 
 
 CurrentUserId = Annotated[int, Depends(get_current_user_id)]
+
+
+def get_document_service(db: DbSession, settings: AppSettings) -> DocumentService:
+    return DocumentService(
+        db,
+        storage=LocalFileStorage(settings.upload_dir),
+        extractor=PdfTextExtractor(),
+        max_upload_bytes=settings.max_upload_size_mb * 1024 * 1024,
+    )
+
+
+DocumentServiceDep = Annotated[DocumentService, Depends(get_document_service)]
+
+
+def get_chapter_service(db: DbSession) -> ChapterService:
+    return ChapterService(db)
+
+
+ChapterServiceDep = Annotated[ChapterService, Depends(get_chapter_service)]
+
+
+def get_provider_builder(settings: AppSettings) -> ProviderBuilder:
+    """How an AI configuration becomes a provider (tests replace it with a fake)."""
+    return lambda config: create_ai_provider(config, settings)
+
+
+def get_ai_settings_service(
+    db: DbSession,
+    settings: AppSettings,
+    build_provider: Annotated[ProviderBuilder, Depends(get_provider_builder)],
+) -> AISettingsService:
+    return AISettingsService(
+        db, secret_box=SecretBox.from_settings(settings), build_provider=build_provider
+    )
+
+
+AISettingsServiceDep = Annotated[AISettingsService, Depends(get_ai_settings_service)]
+
+
+def get_ai_provider_factory(
+    user_id: CurrentUserId,
+    ai_settings: AISettingsServiceDep,
+) -> Callable[[], AIProvider]:
+    """The user's AI, built on first use: deterministic paths work without an AI setup."""
+    return lambda: ai_settings.provider_for(user_id)
+
+
+def get_ai_provider(
+    factory: Annotated[Callable[[], AIProvider], Depends(get_ai_provider_factory)],
+) -> AIProvider:
+    return factory()
+
+
+AIProviderDep = Annotated[AIProvider, Depends(get_ai_provider)]
+
+
+def get_document_analysis_service(
+    db: DbSession,
+    settings: AppSettings,
+    documents: DocumentServiceDep,
+    ai_provider: AIProviderDep,
+) -> DocumentAnalysisService:
+    return DocumentAnalysisService(
+        db,
+        documents=documents,
+        ai_provider=ai_provider,
+        max_pages_per_request=settings.ai_max_pages_per_request,
+        max_concurrency=settings.ai_max_concurrency,
+    )
+
+
+DocumentAnalysisServiceDep = Annotated[
+    DocumentAnalysisService, Depends(get_document_analysis_service)
+]
 
 
 def get_progression_policy() -> ProgressionPolicy:

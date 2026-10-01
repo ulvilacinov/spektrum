@@ -35,6 +35,10 @@ class AIProvider(ABC):
         """Grade a free-form quiz answer and explain mistakes in Turkish."""
 
     @abstractmethod
+    def list_models(self) -> list[str]:
+        """Model ids the API key can use, for the settings page."""
+
+    @abstractmethod
     def chat(self, messages: Sequence[ChatMessage]) -> str:
         """Answer the learner's latest message of a tutoring conversation, in Turkish.
 

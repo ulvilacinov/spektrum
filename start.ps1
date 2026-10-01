@@ -49,8 +49,15 @@ function Disable-QuickEdit {
 Disable-QuickEdit
 
 if (-not (Test-Path (Join-Path $backend '.env'))) {
-  throw 'backend\.env bulunamadı. backend\.env.example dosyasını kopyalayıp GEMINI_API_KEY girin.'
+  throw 'backend\.env bulunamadı. backend\.env.example dosyasını backend\.env olarak kopyalayın.'
 }
+# SECRET_KEY encrypts the users' AI API keys: generated once into backend\.env (never
+# committed). Changing it later would make the saved keys unreadable.
+Push-Location $backend
+try {
+  Invoke-Step 'SECRET_KEY kontrol ediliyor' { & (Join-Path $venv 'python.exe') -m app.cli ensure-secret-key }
+} finally { Pop-Location }
+
 if (Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue) {
   throw "Port $Port kullanımda. Çalışan eski sunucuyu kapatın ya da -Port ile başka bir port seçin."
 }

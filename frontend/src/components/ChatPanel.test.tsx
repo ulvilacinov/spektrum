@@ -69,6 +69,30 @@ describe('ChatPanel', () => {
     expect(within(panel).queryByRole('button', { name: /weil/ })).not.toBeInTheDocument()
   })
 
+  it('points to the settings when no AI is set up', async () => {
+    mockApi({
+      'GET /api/documents': () => json([]),
+      'GET /api/ai-settings': () =>
+        json({
+          configured: false,
+          provider: null,
+          model: null,
+          base_url: null,
+          api_key_hint: null,
+          updated_at: null,
+        }),
+    })
+    const panel = await openChat()
+
+    const notice = await within(panel).findByRole('status')
+    expect(notice).toHaveTextContent('yapay zekâ sağlayıcını ve API anahtarını gir')
+    expect(within(notice).getByRole('link', { name: 'Ayarlar' })).toHaveAttribute(
+      'href',
+      '/settings',
+    )
+    expect(within(panel).queryByRole('button', { name: /Termin/ })).not.toBeInTheDocument()
+  })
+
   it('keeps the question after an AI failure so it can be retried', async () => {
     let fail = true
     chatBackend(() => {

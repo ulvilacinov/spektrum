@@ -19,7 +19,8 @@ The full product specification lives in `docs/SPEC.md`. Read it before starting 
 ## Stack
 
 Python 3.12, FastAPI, Uvicorn, Pydantic v2, pydantic-settings, SQLAlchemy 2.x (sync, psycopg 3),
-Alembic, PostgreSQL 16, PyMuPDF, Gemini (behind a provider abstraction), pytest, ruff.
+Alembic, PostgreSQL 16, PyMuPDF, Gemini / OpenAI / Anthropic (behind a provider abstraction,
+chosen per user), cryptography (Fernet), pytest, ruff.
 
 ## Architecture (backend/)
 
@@ -38,9 +39,17 @@ Alembic, PostgreSQL 16, PyMuPDF, Gemini (behind a provider abstraction), pytest,
   blank pages kept. No DB/HTTP knowledge.
 - `app/services/documents/` — `DocumentService` (upload validation, storage, CRUD,
   `extract_pages(document_id)` for STEP 3) and `LocalFileStorage` (keys relative to `uploads/`).
-- `app/services/ai/` — `AIProvider` (ABC), `GeminiAIProvider`, `create_ai_provider()` (the only
-  place that names concrete providers), provider-independent `prompts.py`, and the structured
-  output contract in `schemas.py` (lenient Pydantic models).
+- `app/services/ai/` — `AIProvider` (ABC), `StructuredAIProvider` (`base.py`: shared validation
+  and one retry), `GeminiAIProvider` (response_schema, rate limiter), `OpenAIProvider`
+  (json_schema; `json_schema=False` = JSON mode + schema in the prompt for OpenAI-compatible
+  services), `AnthropicProvider` (forced tool call), `create_ai_provider(AIConfig, settings)`
+  (the only place that names concrete providers), `errors.provider_error()` (vendor errors →
+  `ai_invalid_key` / `ai_model_not_found` / `ai_quota_exhausted` / `ai_provider_error`),
+  provider-independent `prompts.py`, and the structured output contract in `schemas.py`.
+- `app/services/ai_settings/` — `AISettingsService`: each user's provider, model, base URL
+  (https only) and API key, encrypted with `app/core/crypto.SecretBox` (Fernet from
+  `SECRET_KEY`; production refuses to start without it). `provider_for(user_id)` is the only
+  way business logic gets an AI; without settings it raises `ai_not_configured`.
 - `app/services/documents/analysis.py` — `DocumentAnalysisService`: status claim (atomic
   UPDATE), page extraction, AI chapter detection → `chapter_planning.plan_chapters()`,
   concurrent per-chapter/per-chunk vocabulary extraction → `vocabulary_grounding.ground_items()`
@@ -76,8 +85,9 @@ Alembic, PostgreSQL 16, PyMuPDF, Gemini (behind a provider abstraction), pytest,
 - Schema changes go through Alembic: `alembic revision --autogenerate -m "..."`, then review
   the generated file by hand. `alembic check` must report no drift.
 - Services own transactions (commit); routes never commit.
-- The AI layer is an `AIProvider` interface; Gemini is one implementation. Business logic
-  must never import Gemini directly.
+- The AI layer is an `AIProvider` interface with Gemini, OpenAI(-compatible) and Anthropic
+  implementations; each user picks one on `/settings`. Business logic must never import a
+  vendor SDK. There is no server-wide AI key.
 - AI output for document parsing is always structured JSON validated by Pydantic.
   Vocabulary items must originate from the PDF; the AI may add examples/translations only.
   This is enforced deterministically by `vocabulary_grounding`, not only by the prompt.
@@ -223,6 +233,15 @@ geht") are not rejected.
       GEMINI_API_KEY. `.github/workflows/deploy.yml`: tests → `flyctl deploy --remote-only`
       on push to main (secret FLY_API_TOKEN, variable FLY_DEPLOY=true) → health check. Local
       data (users, 738 items, progress) restored into Neon; the PDF copied to the volume.
+- [x] AI SETTINGS — `UserAISettings` (migration 0007), `GET/PUT/DELETE /api/ai-settings`
+      (key never returned, only `api_key_hint`; omitted key = keep the saved one for the same
+      provider/URL), `POST /api/ai-settings/models` (list models with the entered or saved
+      key), `POST /api/ai-settings/test` (one tiny chat, nothing saved). AI features answer
+      503 `ai_not_configured` until a user saves settings. Frontend `/settings` (header
+      "⚙️ Ayarlar"): provider, base URL (compatible), key, model with fetched suggestions,
+      test / save / delete; the chat panel links there when nothing is configured. Verified
+      with real Gemini (models, test, chat, chapter detection, answer evaluation); OpenAI and
+      Anthropic only against fake SDK clients (no keys available).
 - [x] Self-hosting — `start.ps1` (one command), backend serves `frontend/dist` when
       `FRONTEND_DIST_DIR` is set, Postgres published on 127.0.0.1 only with
       `restart: unless-stopped`, `DATABASE_URL` → 127.0.0.1, root README with Tailscale access

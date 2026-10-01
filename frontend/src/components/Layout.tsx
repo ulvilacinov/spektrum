@@ -57,6 +57,9 @@ export function Layout() {
           </div>
           {user && (
             <div className="header__actions">
+              <Link to="/settings" className="header__settings" title="Yapay zekâ ayarları">
+                ⚙️ <span className="header__settings-label">Ayarlar</span>
+              </Link>
               <GrammarHelp />
               <UserMenu user={user} />
             </div>

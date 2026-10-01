@@ -5,6 +5,7 @@ import { DocumentPage } from './pages/DocumentPage'
 import { DocumentsPage } from './pages/DocumentsPage'
 import { QuizPage } from './pages/QuizPage'
 import { SessionPage } from './pages/SessionPage'
+import { SettingsPage } from './pages/SettingsPage'
 import { WeakWordsPage } from './pages/WeakWordsPage'
 
 export const routes: RouteObject[] = [
@@ -16,6 +17,7 @@ export const routes: RouteObject[] = [
       { path: '/documents/:documentId/weak', element: <WeakWordsPage /> },
       { path: '/sessions/:sessionId', element: <SessionPage /> },
       { path: '/sessions/:sessionId/quiz', element: <QuizPage /> },
+      { path: '/settings', element: <SettingsPage /> },
       { path: '*', element: <NotFound /> },
     ],
   },

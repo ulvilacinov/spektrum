@@ -18,6 +18,8 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
+    if settings.environment == "production" and settings.secret_key is None:
+        raise RuntimeError("SECRET_KEY must be set in production (it encrypts the API keys).")
     app = FastAPI(
         title=settings.app_name,
         version=__version__,

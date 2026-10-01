@@ -63,3 +63,11 @@ class SessionMode(StrEnum):
 class ChatRole(StrEnum):
     USER = "user"
     ASSISTANT = "assistant"
+
+
+class AIProviderKind(StrEnum):
+    GEMINI = "gemini"
+    OPENAI = "openai"
+    ANTHROPIC = "anthropic"
+    # Any service with OpenAI's Chat Completions API (DeepSeek, OpenRouter, Groq, ...).
+    OPENAI_COMPATIBLE = "openai_compatible"

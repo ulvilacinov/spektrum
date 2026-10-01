@@ -22,8 +22,12 @@ dependencies = [
     "psycopg[binary]>=3.2",
     # PDF parsing (STEP 2)
     "pymupdf>=1.24",
-    # AI provider (Gemini implementation, STEP 3)
+    # AI providers (the user picks one on the settings page)
     "google-genai>=1.0",
+    "openai>=1.60",
+    "anthropic>=0.40",
+    # Encryption of the users' API keys
+    "cryptography>=43",
 ]
 
 [project.optional-dependencies]

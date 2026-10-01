@@ -35,7 +35,6 @@ class Settings(BaseSettings):
     session_cookie_secure: bool = False
     session_days: int = Field(default=30, gt=0)
 
-    ai_provider: Literal["gemini"] = "gemini"
     # Pages sent to the AI in one vocabulary-extraction request; long chapters are split.
     ai_max_pages_per_request: int = Field(default=5, gt=0)
     # Parallel vocabulary-extraction requests during one analysis.
@@ -43,8 +42,17 @@ class Settings(BaseSettings):
     # Client-side request budget per model (Gemini free tier: 5). None = no limit.
     ai_requests_per_minute: int | None = Field(default=None, gt=0)
     ai_request_timeout_seconds: int = Field(default=180, gt=0)
-    gemini_api_key: SecretStr | None = None
-    gemini_model: str = "gemini-3.8-flash"
+    # Output budget per structured request (Anthropic needs an explicit limit).
+    ai_max_output_tokens: int = Field(default=16000, gt=0)
+
+    # Encrypts the users' AI API keys in the database. Required in production; keep it
+    # stable (changing it makes stored keys unreadable, users then enter them again).
+    secret_key: SecretStr | None = None
+
+    @field_validator("secret_key", mode="before")
+    @classmethod
+    def blank_secret_is_missing(cls, value: object) -> object:
+        return None if isinstance(value, str) and not value.strip() else value
 
     @field_validator("database_url")
     @classmethod
